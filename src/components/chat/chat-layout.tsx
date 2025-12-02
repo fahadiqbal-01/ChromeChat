@@ -14,6 +14,8 @@ import {
   addDoc,
   increment,
   updateDoc,
+  orderBy,
+  limit,
 } from 'firebase/firestore';
 import { SidebarInset, useSidebar } from '@/components/ui/sidebar';
 import { AppSidebar } from './app-sidebar';
@@ -37,7 +39,6 @@ export function ChatLayout() {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const { setOpenMobile, isMobile } = useSidebar();
   const [isAiChatActive, setAiChatActive] = useState(false);
-  const [aiChatHistory, setAiChatHistory] = useState<AiMessage[]>([]);
   const [isAiLoading, setAiLoading] = useState(false);
 
   const handleLogoClick = () => {
@@ -63,8 +64,20 @@ export function ChatLayout() {
     [firestore, user]
   );
 
+  const aiChatMessagesQuery = useMemoFirebase(
+    () =>
+      firestore && user
+        ? query(
+            collection(firestore, 'users', user.uid, 'ai-chat-messages'),
+            orderBy('timestamp', 'asc')
+          )
+        : null,
+    [firestore, user]
+  );
+
   const { data: allUsers } = useCollection<User>(usersQuery);
   const { data: chats } = useCollection<Chat>(chatsQuery);
+  const { data: aiChatHistory } = useCollection<AiMessage>(aiChatMessagesQuery);
 
   const selectedChat = useMemo(() => {
     if (isAiChatActive || !selectedChatId) return null;
@@ -134,40 +147,49 @@ export function ChatLayout() {
   };
 
   const handleSendAiMessage = async (prompt: string) => {
-    if (!prompt) return;
-  
-    const newUserMessage: AiMessage = { role: 'user', content: prompt };
-    const updatedHistory: AiMessage[] = [...aiChatHistory, newUserMessage];
-  
-    setAiChatHistory(updatedHistory);
+    if (!prompt || !user || !firestore) return;
+
     setAiLoading(true);
-  
+    const newUserMessage: AiMessage = { role: 'user', content: prompt };
+    
+    const aiMessagesCollection = collection(firestore, 'users', user.uid, 'ai-chat-messages');
+    await addDoc(aiMessagesCollection, { ...newUserMessage, timestamp: serverTimestamp() });
+
+    const currentHistory = aiChatHistory || [];
+
     try {
-      // Pass the *entire* updated history to the chatbot flow.
       const response = await chatWithChromeBot({
-        history: updatedHistory,
-        prompt: '', // The prompt is now the last message in history, so this can be empty.
+        history: [...currentHistory, newUserMessage],
+        prompt: '',
       });
   
       const botMessage: AiMessage = { role: 'model', content: response };
-      setAiChatHistory((prevHistory) => [...prevHistory, botMessage]);
+      await addDoc(aiMessagesCollection, { ...botMessage, timestamp: serverTimestamp() });
     } catch (error) {
       console.error('Error chatting with bot:', error);
       const errorMessage: AiMessage = {
         role: 'model',
         content: 'Sorry, I ran into an error. Please try again.',
       };
-      setAiChatHistory((prevHistory) => [...prevHistory, errorMessage]);
+      await addDoc(aiMessagesCollection, { ...errorMessage, timestamp: serverTimestamp() });
     } finally {
       setAiLoading(false);
     }
   };
 
   const handleClearChat = async (chatId: string) => {
-    if (!firestore) return;
+    if (!firestore || !user) return;
     
     if (isAiChatActive && chatId === 'chromebot') {
-      setAiChatHistory([]);
+      const aiMessagesQuery = query(collection(firestore, 'users', user.uid, 'ai-chat-messages'));
+      const messagesSnapshot = await getDocs(aiMessagesQuery);
+      if (messagesSnapshot.empty) return;
+      
+      const batch = writeBatch(firestore);
+      messagesSnapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
       return;
     }
 
@@ -267,7 +289,7 @@ export function ChatLayout() {
           onUnfriend={handleUnfriend}
           allUsers={allUsers}
           isAiChatActive={isAiChatActive}
-          aiChatHistory={aiChatHistory}
+          aiChatHistory={aiChatHistory || []}
           isAiLoading={isAiLoading}
         />
       </SidebarInset>

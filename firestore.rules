@@ -113,6 +113,17 @@ service cloud.firestore {
         allow update: if isExistingOwner(userId);
         allow delete: if isExistingOwner(userId);
       }
+      
+      /**
+       * @description   Stores AI chat messages for a user.
+       * @path          /users/{userId}/ai-chat-messages/{messageId}
+       * @allow         (get/list/create/delete) The owner user can manage their AI chat messages.
+       * @deny          (get/list/create/delete) A user cannot manage AI chat messages of others.
+       * @principle     Path-based ownership.
+       */
+      match /ai-chat-messages/{messageId} {
+        allow get, list, create, delete: if isOwner(userId);
+      }
     }
 
     /**

@@ -96,6 +96,37 @@
         "timestamp",
         "read"
       ]
+    },
+    "AiChatMessage": {
+      "title": "AI Chat Message",
+      "type": "object",
+      "description": "Represents a single message in a conversation with the AI chatbot.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the AI chat message."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["user", "model"],
+          "description": "The role of the message sender (user or AI model)."
+        },
+        "content": {
+          "type": "string",
+          "description": "The text content of the message."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The time the message was created."
+        }
+      },
+      "required": [
+        "id",
+        "role",
+        "content",
+        "timestamp"
+      ]
     }
   },
   "auth": {
@@ -138,6 +169,26 @@
             {
               "name": "friendRequestId",
               "description": "The unique identifier of the friend request."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/ai-chat-messages/{messageId}",
+        "definition": {
+          "entityName": "AiChatMessage",
+          "schema": {
+            "$ref": "#/backend/entities/AiChatMessage"
+          },
+          "description": "Stores AI chat messages for a specific user. Path based ownership.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "messageId",
+              "description": "The unique identifier of the AI chat message."
             }
           ]
         }

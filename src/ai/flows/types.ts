@@ -1,10 +1,12 @@
 import { z } from 'zod';
+import type { Timestamp } from 'firebase/firestore';
 
 export const MessageSchema = z.object({
   role: z.enum(['user', 'model', 'system']),
   content: z.string(),
+  timestamp: z.any().optional(),
 });
-export type AiMessage = z.infer<typeof MessageSchema>;
+export type AiMessage = z.infer<typeof MessageSchema> & { timestamp?: Timestamp };
 
 export const ChatInputSchema = z.object({
   history: z.array(MessageSchema),
