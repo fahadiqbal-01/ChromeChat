@@ -47,7 +47,13 @@ export function AppSidebar({
   const { state } = useSidebar();
   const [searchTerm, setSearchTerm] = React.useState('');
   
-  const searchResults = searchTerm.length > 1 ? allUsers.filter(u => u.id !== user.id && u.username.toLowerCase().includes(searchTerm.toLowerCase()) && !friends.some(f => f.id === u.id)) : [];
+  const searchResults = searchTerm.length > 0 
+  ? allUsers.filter(u => 
+      u.id !== user.id && 
+      u.username.toLowerCase().includes(searchTerm.toLowerCase()) && 
+      !friends.some(f => f.id === u.id)
+    ) 
+  : [];
 
   const getChatPartner = (chat: Chat) => {
     const partnerId = chat.participantIds.find(id => id !== user.id);
