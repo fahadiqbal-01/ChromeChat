@@ -58,7 +58,7 @@ export function ChatView({
         <div className="flex flex-col items-center gap-2 text-center">
             <Logo className="mb-4" />
             <h2 className="text-2xl font-bold tracking-tight">Welcome to ChromeChat</h2>
-            <p className="text-muted-foreground">Select a friend from the sidebar to start a conversation.</p>
+            <p className="text-muted-foreground">Select a friend to start a conversation, or talk to our AI assistant!</p>
         </div>
       </div>
     );

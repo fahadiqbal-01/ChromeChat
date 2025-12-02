@@ -42,7 +42,7 @@ export function ChatLayout() {
   const { user } = useUser();
   const { logout } = useAuth();
   const firestore = useFirestore();
-  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>('chromebot');
   const [aiChatHistory, setAiChatHistory] = useState<AiMessage[]>([]);
   const [isBotTyping, setIsBotTyping] = useState(false);
   const { setOpenMobile, isMobile } = useSidebar();
@@ -251,7 +251,7 @@ export function ChatLayout() {
       email: 'bot@chromechat.ai'
   }
 
-  const aiChat: Chat | null = selectedChatId === 'chromebot' ? {
+  const aiChat: Chat | null = {
     id: 'chromebot',
     participantIds: [currentUser.id, botUser.id],
     messages: aiChatHistory.map(m => ({
@@ -262,7 +262,9 @@ export function ChatLayout() {
         timestamp: m.timestamp,
         read: true,
     } as MessageType))
-  } : null;
+  };
+
+  const currentChat = selectedChatId === 'chromebot' ? aiChat : selectedChat;
 
   return (
     <div className="flex h-screen w-full">
@@ -279,7 +281,7 @@ export function ChatLayout() {
       <SidebarInset className="flex-1 flex flex-col">
         <ChatView
           currentUser={currentUser}
-          chat={selectedChatId === 'chromebot' ? aiChat : selectedChat}
+          chat={currentChat}
           onSendMessage={handleSendMessage}
           onClearChat={handleClearChat}
           onUnfriend={handleUnfriend}
