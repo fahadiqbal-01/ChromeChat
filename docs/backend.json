@@ -1,0 +1,179 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user in the ChromeChat application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "username": {
+          "type": "string",
+          "description": "The username of the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the user.",
+          "format": "email"
+        }
+      },
+      "required": [
+        "id",
+        "username",
+        "email"
+      ]
+    },
+    "FriendRequest": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FriendRequest",
+      "type": "object",
+      "description": "Represents a friend request between two users.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the friend request."
+        },
+        "requesterId": {
+          "type": "string",
+          "description": "Reference to the user who initiated the friend request. (Relationship: User 1:N FriendRequest)"
+        },
+        "recipientId": {
+          "type": "string",
+          "description": "Reference to the user who is the recipient of the friend request. (Relationship: User 1:N FriendRequest)"
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of the friend request (e.g., 'pending', 'accepted', 'rejected')."
+        }
+      },
+      "required": [
+        "id",
+        "requesterId",
+        "recipientId",
+        "status"
+      ]
+    },
+    "ChatMessage": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ChatMessage",
+      "type": "object",
+      "description": "Represents a single chat message between two users.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the chat message."
+        },
+        "senderId": {
+          "type": "string",
+          "description": "Reference to the user who sent the message. (Relationship: User 1:N ChatMessage)"
+        },
+        "receiverId": {
+          "type": "string",
+          "description": "Reference to the user who received the message. (Relationship: User 1:N ChatMessage)"
+        },
+        "content": {
+          "type": "string",
+          "description": "The text content of the chat message."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "The date and time when the message was sent.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "senderId",
+        "receiverId",
+        "content",
+        "timestamp"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles.  Accessible to authenticated users. Path based ownership.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/friendRequests/{friendRequestId}",
+        "definition": {
+          "entityName": "FriendRequest",
+          "schema": {
+            "$ref": "#/backend/entities/FriendRequest"
+          },
+          "description": "Stores friend requests for a specific user. Path based ownership.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "friendRequestId",
+              "description": "The unique identifier of the friend request."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/chats/{chatId}",
+        "definition": {
+          "entityName": "ChatMessage",
+          "schema": {
+            "$ref": "#/backend/entities/ChatMessage"
+          },
+          "description": "Stores chat metadata and member list. Includes denormalized 'members' map for authorization independence.",
+          "params": [
+            {
+              "name": "chatId",
+              "description": "The unique identifier of the chat."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/chats/{chatId}/messages/{messageId}",
+        "definition": {
+          "entityName": "ChatMessage",
+          "schema": {
+            "$ref": "#/backend/entities/ChatMessage"
+          },
+          "description": "Stores individual chat messages within a chat.",
+          "params": [
+            {
+              "name": "chatId",
+              "description": "The unique identifier of the chat."
+            },
+            {
+              "name": "messageId",
+              "description": "The unique identifier of the message."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "This Firestore structure is designed to support a real-time messaging application (ChromeChat) with user search and friend management features, adhering to the principles of Authorization Independence, Clarity of Intent, DBAC, and QAPs. The structure prioritizes path-based ownership and denormalization for robust security rules. The structure is segregated into collections with homogeneous security postures.\n\n*   **Users Collection:** Stores user profiles. Allows listing users for search functionality.  No `get()` calls are necessary for authorization within this collection as read access is public.  For increased data privacy, more stringent rules can be applied, such as restricting read access to authenticated users.\n*   **FriendRequests Collection:**  Facilitates friend request management. Uses subcollections under each user's document to manage outgoing and incoming friend requests separately. This segregation simplifies security rules by clarifying the context of each request.\n*   **Chats Collection:**  Contains chat messages between users. Each chat is represented as a document with a unique ID. The `members` map in each chat document lists the users who are part of the chat, enabling authorization independence as the rule engine does not need to \"get\" parent data for authorization. Messages for each chat are stored in a subcollection, enabling simple list operations and pagination.\n\n\n**Authorization Independence (Denormalization):**\n\n*   The `members` map is denormalized into the `chats` documents. This removes the need for `get()` calls to verify chat membership, as the rule engine can directly check if `request.auth.uid` exists within the `members` map.\n\n**QAPs (Rules are not Filters):**\n\n*   The structure allows for secure `list` operations by leveraging structural segregation. User search is enabled by listing the `users` collection, while access to friend requests is restricted to the respective user's subcollections. Chat messages are only accessible to members of the chat, as enforced by the `members` map in the `chats` documents."
+  }
+}
