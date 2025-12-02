@@ -1,6 +1,6 @@
 'use client';
 
-import { MoreVertical, Trash, UserX } from 'lucide-react';
+import { MoreVertical, Trash2, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -36,7 +36,7 @@ export function ChatHeader({ partner, onClearChat, onUnfriend }: ChatHeaderProps
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={onClearChat} className="text-destructive">
-            <Trash className="mr-2 h-4 w-4" />
+            <Trash2 className="mr-2 h-4 w-4" />
             <span>Clear Chat</span>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onUnfriend} className="text-destructive">

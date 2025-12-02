@@ -81,7 +81,7 @@ export function AppSidebar({
   return (
     <Sidebar>
       <SidebarHeader>
-        <div className="p-2">
+        <div className="p-2 pt-4">
           <Logo />
         </div>
         <div
@@ -156,11 +156,12 @@ export function AppSidebar({
           <Button
             variant="ghost"
             onClick={onLogout}
-            className={`w-full justify-center ${
-              state === 'collapsed' ? 'p-2' : ''
+            className={`w-full justify-start gap-2 ${
+              state === 'collapsed' ? 'justify-center p-2' : ''
             }`}
           >
-            {state === 'collapsed' ? <LogOut className="h-5 w-5" /> : 'Logout'}
+            <LogOut className="h-5 w-5" />
+            {state === 'expanded' && 'Logout'}
           </Button>
       </SidebarFooter>
     </Sidebar>

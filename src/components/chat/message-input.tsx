@@ -3,7 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Send } from 'lucide-react';
+import { SendHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
@@ -59,7 +59,7 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
             )}
           />
           <Button type="submit" size="icon" disabled={form.formState.isSubmitting || !form.formState.isValid}>
-            <Send className="h-5 w-5" />
+            <SendHorizontal className="h-5 w-5" />
             <span className="sr-only">Send Message</span>
           </Button>
         </form>
