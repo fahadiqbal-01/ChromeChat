@@ -28,6 +28,7 @@ Here is the conversation history:
 {{#each history}}
 - {{role}}: {{content}}
 {{/each}}
+New user message: {{history[history.length-1].content}}
 `;
 
     const { output } = await ai.generate({
