@@ -134,13 +134,13 @@ export function ChatLayout() {
 
   const handleAddFriendAndStartChat = async (friend: User) => {
     if (!user || !firestore || user.uid === friend.id) return;
-
+  
     const sortedIds = [user.uid, friend.id].sort();
     const newChatId = sortedIds.join('-');
     const chatDocRef = doc(firestore, 'chats', newChatId);
-
+  
     const chatDoc = await getDoc(chatDocRef);
-
+  
     if (chatDoc.exists()) {
       setSelectedChatId(chatDoc.id);
     } else {
@@ -152,10 +152,11 @@ export function ChatLayout() {
           [friend.id]: 0,
         },
       };
-      setDocumentNonBlocking(chatDocRef, newChatData, { merge: false });
+      // Use the non-blocking version to ensure permission errors are caught by the global handler.
+      setDocumentNonBlocking(chatDocRef, newChatData);
       setSelectedChatId(newChatId);
     }
-
+  
     if (isMobile) {
       setOpenMobile(false);
     }
