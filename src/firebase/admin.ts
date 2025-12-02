@@ -1,21 +1,17 @@
+'use server';
+
 import * as admin from 'firebase-admin';
 import { firebaseConfig } from '@/firebase/config';
 
+// Ensure the app is only initialized once
 if (!admin.apps.length) {
-    // When running in a Google Cloud environment, the GOOGLE_APPLICATION_CREDENTIALS
-    // environment variable is automatically set. The SDK uses this to initialize.
-    // However, for server-side flows, it's safer to be explicit.
-    try {
-        admin.initializeApp({
-            // Explicitly use the projectId from the client config
-            projectId: firebaseConfig.projectId,
-        });
-    } catch(e) {
-        console.warn(
-            'Admin SDK initialization failed. This may happen in local development if GOOGLE_APPLICATION_CREDENTIALS is not set. The Genkit flow might not work.',
-            e
-        );
-    }
+  // When running in a Google Cloud environment, the GOOGLE_APPLICATION_CREDENTIALS
+  // environment variable is usually set, allowing the SDK to initialize automatically.
+  // However, in some serverless or local environments, this might not be the case.
+  // By explicitly providing the projectId, we make the initialization more robust.
+  admin.initializeApp({
+    projectId: firebaseConfig.projectId,
+  });
 }
 
 export { admin };
