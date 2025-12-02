@@ -7,19 +7,27 @@ import {
 } from '@/firebase';
 import {
   createUserWithEmailAndPassword,
+  setPersistence,
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
+  browserLocalPersistence,
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 
 export const useAuth = () => {
   const { user, isUserLoading: loading, userError } = useUser();
   const auth = useFirebaseAuth();
   const firestore = useFirestore();
   const router = useRouter();
+
+  useEffect(() => {
+    if (auth) {
+      setPersistence(auth, browserLocalPersistence);
+    }
+  }, [auth]);
 
   const signup = useCallback(
     async (username: string, email: string, password: string) => {
