@@ -22,6 +22,7 @@ import {
   AvatarFallback,
 } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/use-auth';
+import { Badge } from '@/components/ui/badge';
 
 
 interface AppSidebarProps {
@@ -136,12 +137,13 @@ export function AppSidebar({
             {chats.map((chat) => {
               const friend = getChatPartner(chat);
               if (!friend) return null;
+              const unreadCount = chat.unreadCount?.[user.id] || 0;
               return (
                 <SidebarMenuItem key={chat.id}>
                   <SidebarMenuButton
                     onClick={() => handleSelectChat(chat.id)}
                     isActive={selectedChatId === chat.id}
-                    className="justify-start w-full"
+                    className="justify-start w-full relative"
                   >
                     <Avatar className="h-6 w-6">
                       <AvatarFallback className="text-xs">
@@ -149,6 +151,9 @@ export function AppSidebar({
                       </AvatarFallback>
                     </Avatar>
                     <span className="truncate">{friend.username}</span>
+                    {unreadCount > 0 && (
+                      <Badge className="absolute right-2 h-5 w-5 justify-center p-0">{unreadCount}</Badge>
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               );

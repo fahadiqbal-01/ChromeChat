@@ -12,10 +12,12 @@ export interface Message {
   senderId: string;
   text: string;
   timestamp: Timestamp | number;
+  read: boolean;
 }
 
 export interface Chat {
-  id: string;
+  id:string;
   participantIds: string[];
   messages: Message[];
+  unreadCount?: { [key: string]: number };
 }

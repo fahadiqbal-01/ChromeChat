@@ -82,6 +82,10 @@
           "type": "string",
           "description": "The date and time when the message was sent.",
           "format": "date-time"
+        },
+        "read": {
+          "type": "boolean",
+          "description": "Indicates whether the message has been read by the recipient."
         }
       },
       "required": [
@@ -89,7 +93,8 @@
         "senderId",
         "receiverId",
         "content",
-        "timestamp"
+        "timestamp",
+        "read"
       ]
     }
   },

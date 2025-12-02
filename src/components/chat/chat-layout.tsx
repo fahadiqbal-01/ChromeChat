@@ -11,6 +11,10 @@ import {
   writeBatch,
   deleteDoc,
   getDoc,
+  runTransaction,
+  addDoc,
+  increment,
+  updateDoc,
 } from 'firebase/firestore';
 import { SidebarInset, useSidebar } from '@/components/ui/sidebar';
 import { AppSidebar } from './app-sidebar';
@@ -65,15 +69,30 @@ export function ChatLayout() {
     return chats.find((c) => c.id === selectedChatId) || null;
   }, [selectedChatId, chats]);
 
-  const handleSelectChat = (chatId: string) => {
+  const handleSelectChat = async (chatId: string) => {
     setSelectedChatId(chatId);
     if (isMobile) {
       setOpenMobile(false);
     }
+
+    if (user && firestore) {
+      const chatDocRef = doc(firestore, 'chats', chatId);
+      const unreadCountKey = `unreadCount.${user.uid}`;
+      try {
+        await updateDoc(chatDocRef, {
+          [unreadCountKey]: 0,
+        });
+      } catch (e) {
+        console.error("Could not mark messages as read.", e);
+      }
+    }
   };
 
   const handleSendMessage = (text: string) => {
-    if (!selectedChatId || !user || !firestore) return;
+    if (!selectedChatId || !user || !firestore || !selectedChat) return;
+
+    const partnerId = selectedChat.participantIds.find(id => id !== user.uid);
+    if (!partnerId) return;
 
     const messagesCol = collection(
       firestore,
@@ -87,7 +106,15 @@ export function ChatLayout() {
       senderId: user.uid,
       text,
       timestamp: serverTimestamp(),
+      read: false,
     });
+    
+    // Increment unread count for the receiver
+    const chatDocRef = doc(firestore, 'chats', selectedChatId);
+    const unreadCountKey = `unreadCount.${partnerId}`;
+    updateDoc(chatDocRef, {
+      [unreadCountKey]: increment(1)
+    }).catch(e => console.error("Could not update unread count", e));
   };
 
   const handleClearChat = async (chatId: string) => {
@@ -104,13 +131,13 @@ export function ChatLayout() {
         batch.delete(doc.ref);
       });
       await batch.commit();
-    } catch (e) {
-      const contextualError = new FirestorePermissionError({
-        operation: 'list',
-        path: `chats/${chatId}/messages`,
-      });
-      errorEmitter.emit('permission-error', contextualError);
-      throw e;
+    } catch (e: any) {
+        const contextualError = new FirestorePermissionError({
+            operation: 'list',
+            path: `chats/${chatId}/messages`,
+        });
+        errorEmitter.emit('permission-error', contextualError);
+        throw e;
     }
   };
 
@@ -154,24 +181,23 @@ export function ChatLayout() {
     const chatDocRef = doc(firestore, 'chats', newChatId);
 
     try {
-      const chatDoc = await getDoc(chatDocRef);
+        const chatDoc = await getDoc(chatDocRef);
 
-      if (chatDoc.exists()) {
-        // Chat already exists, just select it
-        setSelectedChatId(chatDoc.id);
-      } else {
-        // Create new chat
-        const newChatData = {
-          id: newChatId,
-          participantIds: sortedIds,
-          createdAt: serverTimestamp(),
-        };
-        // Use non-blocking write for optimistic UI
-        setDocumentNonBlocking(chatDocRef, newChatData, { merge: false });
-        setSelectedChatId(newChatId);
-      }
+        if (chatDoc.exists()) {
+            setSelectedChatId(chatDoc.id);
+        } else {
+            const newChatData: Partial<Chat> = {
+                id: newChatId,
+                participantIds: sortedIds,
+                unreadCount: {
+                  [user.uid]: 0,
+                  [friend.id]: 0,
+                }
+            };
+            setDocumentNonBlocking(chatDocRef, newChatData, { merge: false });
+            setSelectedChatId(newChatId);
+        }
     } catch (e) {
-      // This will catch errors from getDoc, for example if rules deny it
       const contextualError = new FirestorePermissionError({
         operation: 'get',
         path: `chats/${newChatId}`,
@@ -185,12 +211,20 @@ export function ChatLayout() {
     }
   };
 
-  if (!user || !allUsers) return null;
+  if (!user || !allUsers) {
+     return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const currentUser = {
     id: user.uid,
     email: user.email!,
-    username: user.displayName || 'User',
+    username: user.displayName || user.email?.split('@')[0] || 'User',
   };
 
   return (
