@@ -11,11 +11,11 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarInput,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { LogOut, Search, User as UserIcon } from 'lucide-react';
-import { useSidebar } from '@/components/ui/sidebar';
 import type { User, Chat } from '@/lib/types';
 import { Logo } from '../logo';
 import {
@@ -45,7 +45,7 @@ export function AppSidebar({
   selectedChatId,
   onAddFriend
 }: AppSidebarProps) {
-  const { state } = useSidebar();
+  const { state, setOpenMobile, isMobile } = useSidebar();
   const [searchTerm, setSearchTerm] = React.useState('');
   
   const friends = React.useMemo(() => {
@@ -71,6 +71,13 @@ export function AppSidebar({
   const handleAddClick = (friend: User) => {
     onAddFriend(friend);
     setSearchTerm('');
+  }
+
+  const handleSelectChat = (chatId: string) => {
+    onSelectChat(chatId);
+    if(isMobile) {
+        setOpenMobile(false);
+    }
   }
 
   return (
@@ -116,7 +123,7 @@ export function AppSidebar({
               return (
                 <SidebarMenuItem key={chat.id}>
                   <SidebarMenuButton
-                    onClick={() => onSelectChat(chat.id)}
+                    onClick={() => handleSelectChat(chat.id)}
                     isActive={selectedChatId === chat.id}
                     className="justify-start w-full"
                   >

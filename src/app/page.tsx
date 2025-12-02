@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { ChatLayout } from '@/components/chat/chat-layout';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@/firebase';
+import { SidebarProvider } from '@/components/ui/sidebar';
 
 export default function HomePage() {
   const { user, loading } = useUser();
@@ -31,5 +32,9 @@ export default function HomePage() {
     );
   }
 
-  return <ChatLayout />;
+  return (
+    <SidebarProvider defaultOpen>
+      <ChatLayout />
+    </SidebarProvider>
+  );
 }

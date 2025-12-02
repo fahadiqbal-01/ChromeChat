@@ -12,10 +12,13 @@ import {
   limit,
   writeBatch,
   deleteDoc,
+  doc,
+  setDoc,
 } from 'firebase/firestore';
 import {
   SidebarProvider,
   SidebarInset,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { AppSidebar } from './app-sidebar';
 import { ChatView } from './chat-view';
@@ -27,6 +30,7 @@ export function ChatLayout() {
   const { user, logout } = useAuth();
   const firestore = useFirestore();
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const { setOpenMobile, isMobile } = useSidebar();
 
   // Memoize Firestore queries
   const usersQuery = useMemoFirebase(
@@ -51,11 +55,14 @@ export function ChatLayout() {
     if (!selectedChatId || !chats) return null;
     return chats.find((c) => c.id === selectedChatId) || null;
   }, [selectedChatId, chats]);
-  
+
   const handleSelectChat = (chatId: string) => {
     setSelectedChatId(chatId);
+    if (isMobile) {
+      setOpenMobile(false);
+    }
   };
-  
+
   const handleSendMessage = async (text: string) => {
     if (!selectedChatId || !user || !firestore) return;
 
@@ -74,94 +81,87 @@ export function ChatLayout() {
   };
 
   const handleClearChat = async (chatId: string) => {
-     if (!firestore) return;
-    const messagesQuery = query(collection(firestore, 'chats', chatId, 'messages'));
+    if (!firestore) return;
+    const messagesQuery = query(
+      collection(firestore, 'chats', chatId, 'messages')
+    );
     const messagesSnapshot = await getDocs(messagesQuery);
-    
+
     const batch = writeBatch(firestore);
-    messagesSnapshot.docs.forEach(doc => {
-       batch.delete(doc.ref);
+    messagesSnapshot.docs.forEach((doc) => {
+      batch.delete(doc.ref);
     });
     await batch.commit();
-
-    if (selectedChatId === chatId) {
-        // Visually clear messages, though they are not yet deleted
-    }
   };
 
   const handleUnfriend = async (friendId: string) => {
-     if (!user || !firestore) return;
-     
-     const sortedIds = [user.uid, friendId].sort();
+    if (!user || !firestore) return;
 
-     const chatToRemoveQuery = query(
-         collection(firestore, 'chats'),
-         where('participantIds', '==', sortedIds),
-         limit(1)
-     );
-     const chatSnapshot = await getDocs(chatToRemoveQuery);
-     if (!chatSnapshot.empty) {
-        const docToDelete = chatSnapshot.docs[0];
-        await deleteDoc(docToDelete.ref);
-        
-        if (selectedChatId === docToDelete.id) {
-            setSelectedChatId(null);
-        }
-     }
+    const sortedIds = [user.uid, friendId].sort();
+    const chatIdToDelete = sortedIds.join('-');
+
+    const chatDocRef = doc(firestore, 'chats', chatIdToDelete);
+    await deleteDoc(chatDocRef);
+
+    if (selectedChatId === chatIdToDelete) {
+      setSelectedChatId(null);
+    }
   };
 
   const handleAddFriendAndStartChat = async (friend: User) => {
     if (!user || !firestore || user.uid === friend.id) return;
-    
+
     const sortedIds = [user.uid, friend.id].sort();
+    const newChatId = sortedIds.join('-');
 
-    // Check if chat already exists
-    const chatsRef = collection(firestore, 'chats');
-    const q = query(chatsRef, where('participantIds', '==', sortedIds), limit(1));
-    const querySnapshot = await getDocs(q);
+    const chatDocRef = doc(firestore, 'chats', newChatId);
+    const chatSnapshot = await getDocs(
+      query(collection(firestore, 'chats'), where('__name__', '==', newChatId), limit(1))
+    );
 
-    if (!querySnapshot.empty) {
-        // Chat already exists, select it
-        const existingChatId = querySnapshot.docs[0].id;
-        setSelectedChatId(existingChatId);
+    if (!chatSnapshot.empty) {
+      setSelectedChatId(chatSnapshot.docs[0].id);
     } else {
-        // Create a new chat
-        const newChatRef = await addDoc(chatsRef, {
-            participantIds: sortedIds,
-            createdAt: serverTimestamp(),
-        });
-        setSelectedChatId(newChatRef.id);
+      await setDoc(chatDocRef, {
+        participantIds: sortedIds,
+        createdAt: serverTimestamp(),
+      });
+      setSelectedChatId(newChatId);
+    }
+    if (isMobile) {
+      setOpenMobile(false);
     }
   };
 
-
   if (!user || !allUsers) return null;
 
-  const currentUser = {id: user.uid, email: user.email!, username: user.displayName || 'User'};
+  const currentUser = {
+    id: user.uid,
+    email: user.email!,
+    username: user.displayName || 'User',
+  };
 
   return (
-    <SidebarProvider defaultOpen>
-      <div className="flex h-screen w-full">
-        <AppSidebar
-          user={currentUser}
-          chats={chats || []}
+    <div className="flex h-screen w-full">
+      <AppSidebar
+        user={currentUser}
+        chats={chats || []}
+        allUsers={allUsers || []}
+        onSelectChat={handleSelectChat}
+        onLogout={logout}
+        selectedChatId={selectedChatId}
+        onAddFriend={handleAddFriendAndStartChat}
+      />
+      <SidebarInset className="flex-1 flex flex-col">
+        <ChatView
+          currentUser={currentUser}
+          chat={selectedChat}
+          onSendMessage={handleSendMessage}
+          onClearChat={handleClearChat}
+          onUnfriend={handleUnfriend}
           allUsers={allUsers || []}
-          onSelectChat={handleSelectChat}
-          onLogout={logout}
-          selectedChatId={selectedChatId}
-          onAddFriend={handleAddFriendAndStartChat}
         />
-        <SidebarInset className="flex-1 flex flex-col">
-          <ChatView
-            currentUser={currentUser}
-            chat={selectedChat}
-            onSendMessage={handleSendMessage}
-            onClearChat={handleClearChat}
-            onUnfriend={handleUnfriend}
-            allUsers={allUsers || []}
-          />
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+      </SidebarInset>
+    </div>
   );
 }
