@@ -3,6 +3,7 @@
 import {
   useAuth as useFirebaseAuth,
   useFirestore,
+  setDocumentNonBlocking,
 } from '@/firebase';
 import {
   createUserWithEmailAndPassword,
@@ -15,6 +16,7 @@ import {
 import { doc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect } from 'react';
+import { FirebaseError } from 'firebase/app';
 
 export const useAuth = () => {
   const auth = useFirebaseAuth();
@@ -23,41 +25,38 @@ export const useAuth = () => {
 
   useEffect(() => {
     if (auth) {
-      // This ensures the session is persisted across browser tabs and sessions.
-      setPersistence(auth, browserLocalPersistence);
+      setPersistence(auth, browserLocalPersistence).catch((error) => {
+        console.error("Failed to set auth persistence", error);
+      });
     }
   }, [auth]);
 
   const signup = useCallback(
     async (username: string, email: string, password: string) => {
       if (!auth || !firestore) return null;
-      try {
-        const userCredential = await createUserWithEmailAndPassword(
-          auth,
-          email,
-          password
-        );
-        const newUser = userCredential.user;
-        if (newUser) {
-          // Update Firebase Auth profile
-          await updateProfile(newUser, { displayName: username });
+      
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const newUser = userCredential.user;
+      
+      // Update Firebase Auth profile
+      await updateProfile(newUser, { displayName: username });
 
-          // Create a user profile document in Firestore
-          const userProfile = {
-            id: newUser.uid,
-            username,
-            email,
-          };
-          const userDocRef = doc(firestore, 'users', newUser.uid);
-          await setDoc(userDocRef, userProfile);
-          
-          return newUser;
-        }
-        return null;
-      } catch (error) {
-        console.error('Signup error:', error);
-        throw error;
-      }
+      // Create a user profile document in Firestore
+      const userProfile = {
+        id: newUser.uid,
+        username,
+        email,
+      };
+      const userDocRef = doc(firestore, 'users', newUser.uid);
+      
+      // Use the non-blocking version with proper error handling
+      setDocumentNonBlocking(userDocRef, userProfile, {});
+      
+      return newUser;
     },
     [auth, firestore]
   );
@@ -65,7 +64,6 @@ export const useAuth = () => {
   const login = useCallback(
     async (email: string, password: string) => {
       if (!auth) return null;
-      // The component calling this will handle try-catch for UI feedback.
       const userCredential = await signInWithEmailAndPassword(
         auth,
         email,
