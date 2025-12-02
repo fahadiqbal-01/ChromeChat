@@ -27,6 +27,8 @@ import {
   useMemoFirebase,
   useFirestore,
   useUser,
+  errorEmitter,
+  FirestorePermissionError,
 } from '@/firebase';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { usePresence } from '@/hooks/use-presence';
@@ -164,27 +166,49 @@ export function ChatLayout() {
     const sortedIds = [request.requesterId, request.recipientId].sort();
     const newChatId = sortedIds.join('-');
     const chatDocRef = doc(firestore, 'chats', newChatId);
-    batch.set(chatDocRef, {
+    const chatData = {
       id: newChatId,
       participantIds: sortedIds,
       unreadCount: {
         [request.requesterId]: 0,
         [request.recipientId]: 0,
       },
-    });
+    };
+    batch.set(chatDocRef, chatData);
 
     // 2. Add each user to the other's friends list
     const currentUserRef = doc(firestore, 'users', user.uid);
     const requesterUserRef = doc(firestore, 'users', request.requesterId);
-    batch.update(currentUserRef, { friendIds: arrayUnion(request.requesterId) });
-    batch.update(requesterUserRef, { friendIds: arrayUnion(user.uid) });
+    const currentUserUpdate = { friendIds: arrayUnion(request.requesterId) };
+    const requesterUserUpdate = { friendIds: arrayUnion(user.uid) };
+    batch.update(currentUserRef, currentUserUpdate);
+    batch.update(requesterUserRef, requesterUserUpdate);
 
     // 3. Delete the friend request
     const requestDocRef = doc(firestore, 'users', user.uid, 'friendRequests', request.id);
     batch.delete(requestDocRef);
 
-    await batch.commit();
-    setSelectedChatId(newChatId);
+    batch.commit()
+      .then(() => {
+        setSelectedChatId(newChatId);
+      })
+      .catch(async (serverError) => {
+        // Since a batch can fail on multiple documents, we create a generic
+        // error that points to the most likely permission issues.
+        const permissionError = new FirestorePermissionError({
+          // We provide a generalized path because a batch can fail on any of its operations
+          path: `users/${user.uid} or chats/${newChatId}`, 
+          operation: 'write',
+          requestResourceData: {
+            description: "Batch operation to accept friend request failed. Check permissions for creating a chat, updating user profiles (friendIds), and deleting a friend request.",
+            chatData,
+            currentUserUpdate,
+            requesterUserUpdate,
+            deletedRequestPath: requestDocRef.path
+          },
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
   };
   
   const handleRejectRequest = async (request: FriendRequest) => {
