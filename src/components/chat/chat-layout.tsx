@@ -9,7 +9,6 @@ import {
   getDocs,
   doc,
   writeBatch,
-  deleteDoc,
   getDoc,
   addDoc,
   increment,
@@ -25,6 +24,7 @@ import {
   useMemoFirebase,
   useFirestore,
   useUser,
+  deleteDocumentNonBlocking,
 } from '@/firebase';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { usePresence } from '@/hooks/use-presence';
@@ -136,20 +136,20 @@ export function ChatLayout() {
 
   const handleUnfriend = async (friendId: string) => {
     if (!user || !firestore || !chats) return;
-
+  
     const sortedIds = [user.uid, friendId].sort();
     const chatIdToDelete = sortedIds.join('-');
-    
+  
     // Clear chat messages first
     await handleClearChat(chatIdToDelete);
-
-    // Then delete the chat document
-    await deleteDoc(doc(firestore, 'chats', chatIdToDelete));
-
-    // Update local state to remove the chat from the sidebar
-    setChats(chats.filter(chat => chat.id !== chatIdToDelete));
-
-    // If the unfriended chat was selected, clear the view
+  
+    // Then delete the chat document using the non-blocking method
+    const chatDocRef = doc(firestore, 'chats', chatIdToDelete);
+    deleteDocumentNonBlocking(chatDocRef);
+  
+    // Optimistically update the UI
+    setChats((prevChats) => (prevChats || []).filter((chat) => chat.id !== chatIdToDelete));
+  
     if (selectedChatId === chatIdToDelete) {
       setSelectedChatId(null);
     }
