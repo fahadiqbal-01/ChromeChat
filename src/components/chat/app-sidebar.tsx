@@ -13,6 +13,7 @@ import {
   SidebarGroup,
   SidebarInput,
   useSidebar,
+  SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { LogOut, Search, User as UserIcon } from 'lucide-react';
@@ -110,6 +111,9 @@ export function AppSidebar({
             <div className="flex-1 overflow-hidden">
               <p className="truncate font-semibold text-base md:text-sm">{user.username}</p>
             </div>
+          )}
+          {state === 'expanded' && (
+            <SidebarTrigger className="h-8 w-8 md:h-7 md:w-7" />
           )}
         </div>
       </SidebarHeader>
