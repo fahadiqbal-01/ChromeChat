@@ -14,7 +14,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { LogOut, Search, User as UserIcon } from 'lucide-react';
+import { LogOut, Search, User as UserIcon, Bot } from 'lucide-react';
 import type { User, Chat } from '@/lib/types';
 import { Logo } from '../logo';
 import {
@@ -134,6 +134,20 @@ export function AppSidebar({
         <SidebarGroup>
            <p className="px-2 text-xs font-semibold text-muted-foreground mb-2">Friends</p>
           <SidebarMenu>
+            <SidebarMenuItem key="chromebot">
+              <SidebarMenuButton
+                onClick={() => handleSelectChat('chromebot')}
+                isActive={selectedChatId === 'chromebot'}
+                className="justify-start w-full relative"
+              >
+                <Avatar className="h-6 w-6">
+                  <AvatarFallback className="bg-primary text-primary-foreground">
+                    <Bot className="h-4 w-4" />
+                  </AvatarFallback>
+                </Avatar>
+                <span className="truncate">ChromeBot</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
             {chats.map((chat) => {
               const friend = getChatPartner(chat);
               if (!friend) return null;

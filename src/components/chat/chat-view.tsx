@@ -1,7 +1,6 @@
 'use client';
 
-import type { User as AuthUser } from 'firebase/auth';
-import type { User, Chat, Message } from '@/lib/types';
+import type { User } from '@/lib/types';
 import { ChatHeader } from './chat-header';
 import { MessageList } from './message-list';
 import { MessageInput } from './message-input';
@@ -9,22 +8,38 @@ import { Logo } from '../logo';
 import { SidebarTrigger } from '../ui/sidebar';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, orderBy, query } from 'firebase/firestore';
+import type { Chat as ChatType, Message } from '@/lib/types';
 
 interface ChatViewProps {
   currentUser: User;
-  chat: Chat | null;
+  chat: ChatType | null;
   onSendMessage: (text: string) => void;
   onClearChat: (chatId: string) => void;
   onUnfriend: (friendId: string) => void;
   allUsers: User[];
+  isBotTyping?: boolean;
 }
 
-export function ChatView({ currentUser, chat, onSendMessage, onClearChat, onUnfriend, allUsers }: ChatViewProps) {
+const chromeBotUser: User = {
+    id: 'chromebot',
+    username: 'ChromeBot',
+    email: 'bot@chromebot.ai'
+};
+
+export function ChatView({ 
+    currentUser, 
+    chat, 
+    onSendMessage, 
+    onClearChat, 
+    onUnfriend, 
+    allUsers,
+    isBotTyping 
+}: ChatViewProps) {
   const firestore = useFirestore();
 
   const messagesQuery = useMemoFirebase(
     () =>
-      firestore && chat
+      firestore && chat && chat.id !== 'chromebot'
         ? query(
             collection(firestore, 'chats', chat.id, 'messages'),
             orderBy('timestamp', 'asc')
@@ -33,7 +48,9 @@ export function ChatView({ currentUser, chat, onSendMessage, onClearChat, onUnfr
     [firestore, chat]
   );
   
-  const { data: messages } = useCollection<Message>(messagesQuery);
+  const { data: firestoreMessages } = useCollection<Message>(messagesQuery);
+  
+  const messages = chat?.id === 'chromebot' ? chat.messages : firestoreMessages;
 
   if (!chat) {
     return (
@@ -51,7 +68,10 @@ export function ChatView({ currentUser, chat, onSendMessage, onClearChat, onUnfr
   }
 
   const partnerId = chat.participantIds.find(id => id !== currentUser.id);
-  const partner = allUsers.find(u => u.id === partnerId);
+  const partner = chat.id === 'chromebot' 
+    ? chromeBotUser 
+    : allUsers.find(u => u.id === partnerId);
+
 
   if (!partner) {
      return <div className="flex h-full flex-col items-center justify-center gap-4 bg-background"><p>User not found.</p></div>
@@ -63,8 +83,14 @@ export function ChatView({ currentUser, chat, onSendMessage, onClearChat, onUnfr
         partner={partner}
         onClearChat={() => onClearChat(chat.id)}
         onUnfriend={() => onUnfriend(partner.id)}
+        isBot={chat.id === 'chromebot'}
       />
-      <MessageList messages={messages || []} currentUserId={currentUser.id} />
+      <MessageList 
+        messages={messages || []} 
+        currentUserId={currentUser.id} 
+        isBotTyping={isBotTyping}
+        botUser={chromeBotUser}
+        />
       <MessageInput onSendMessage={onSendMessage} />
     </div>
   );
