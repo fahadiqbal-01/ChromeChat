@@ -25,6 +25,7 @@ import {
 import { useAuth } from '@/hooks/use-auth';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 
 interface AppSidebarProps {
@@ -32,7 +33,6 @@ interface AppSidebarProps {
   chats: Chat[];
   allUsers: User[];
   onSelectChat: (chatId: string) => void;
-  onSelectDeletedUser: () => void;
   onLogout: () => void;
   selectedChatId?: string | null;
   onAddFriend: (friend: User) => void;
@@ -44,7 +44,6 @@ export function AppSidebar({
   chats,
   allUsers,
   onSelectChat,
-  onSelectDeletedUser,
   onLogout,
   selectedChatId,
   onAddFriend,
@@ -52,6 +51,7 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const { state, setOpenMobile, isMobile } = useSidebar();
   const [searchTerm, setSearchTerm] = React.useState('');
+  const { toast } = useToast();
   
   const getChatPartner = (chat: Chat) => {
     const partnerId = chat.participantIds.find(id => id !== user.id);
@@ -93,6 +93,14 @@ export function AppSidebar({
     if(isMobile) {
         setOpenMobile(false);
     }
+  }
+
+  const handleSelectDeletedUser = () => {
+    toast({
+      variant: 'destructive',
+      title: 'Account Deleted',
+      description: "This user has deleted their account and can no longer receive messages.",
+    });
   }
 
   return (
@@ -159,7 +167,7 @@ export function AppSidebar({
               return (
                 <SidebarMenuItem key={chat.id}>
                   <SidebarMenuButton
-                    onClick={() => friend ? handleSelectChat(chat.id) : onSelectDeletedUser()}
+                    onClick={() => friend ? handleSelectChat(chat.id) : handleSelectDeletedUser()}
                     isActive={selectedChatId === chat.id && !!friend}
                     className={cn(
                       'justify-start w-full relative',

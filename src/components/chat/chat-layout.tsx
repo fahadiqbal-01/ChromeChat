@@ -14,6 +14,7 @@ import {
   addDoc,
   increment,
   updateDoc,
+  deleteDoc,
 } from 'firebase/firestore';
 import { SidebarInset, useSidebar } from '@/components/ui/sidebar';
 import { AppSidebar } from './app-sidebar';
@@ -26,15 +27,13 @@ import {
   useFirestore,
   useUser,
 } from '@/firebase';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { usePresence } from '@/hooks/use-presence';
-import { useToast } from '@/hooks/use-toast';
 
 export function ChatLayout() {
   const { user } = useUser();
   const { logout } = useAuth();
   const firestore = useFirestore();
-  const { toast } = useToast();
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const { setOpenMobile, isMobile } = useSidebar();
   
@@ -76,11 +75,7 @@ export function ChatLayout() {
       setOpenMobile(false);
     }
   
-    const chat = chats?.find(c => c.id === chatId);
-    const partnerId = chat?.participantIds.find(id => id !== user?.uid);
-    const partnerExists = allUsers?.some(u => u.id === partnerId);
-
-    if (user && firestore && partnerExists) {
+    if (user && firestore) {
       const chatDocRef = doc(firestore, 'chats', chatId);
       const unreadCountKey = `unreadCount.${user.uid}`;
       try {
@@ -92,14 +87,6 @@ export function ChatLayout() {
       }
     }
   };
-
-  const handleSelectDeletedUser = () => {
-    toast({
-      variant: 'destructive',
-      title: 'Account Deleted',
-      description: "This user has deleted their account and can no longer receive messages.",
-    });
-  }
 
 
   const handleSendMessage = async (text: string) => {
@@ -200,7 +187,6 @@ export function ChatLayout() {
         chats={chats || []}
         allUsers={allUsers || []}
         onSelectChat={handleSelectChat}
-        onSelectDeletedUser={handleSelectDeletedUser}
         onLogout={logout}
         selectedChatId={selectedChatId}
         onAddFriend={handleAddFriendAndStartChat}
