@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
@@ -8,7 +9,7 @@ import { FirebaseClientProvider } from '@/firebase';
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
 export const metadata: Metadata = {
-  title: 'ChromeChat',
+  title: 'EverChat',
   description: 'A minimal and cool chat application.',
 };
 
@@ -28,5 +29,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-    

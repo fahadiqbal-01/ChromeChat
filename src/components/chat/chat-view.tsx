@@ -46,11 +46,11 @@ export function ChatView({
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 bg-background">
         <div className="absolute right-4 top-4">
-          <SidebarTrigger />
+          <SidebarTrigger className="md:hidden" />
         </div>
         <div className="flex flex-col items-center gap-2 text-center">
             <Logo className="mb-2" />
-            <h2 className="text-2xl font-bold tracking-tight">Welcome to ChromeChat</h2>
+            <h2 className="text-2xl font-bold tracking-tight">Welcome to EverChat</h2>
             <p className="text-muted-foreground">Select a friend to start a conversation.</p>
         </div>
       </div>

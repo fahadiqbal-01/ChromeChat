@@ -69,7 +69,7 @@ export function SignupForm() {
       <CardHeader className="items-center">
         <Logo className="mb-2" />
         <CardTitle>Create an Account</CardTitle>
-        <CardDescription>Join ChromeChat to start messaging</CardDescription>
+        <CardDescription>Join EverChat to start messaging</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
