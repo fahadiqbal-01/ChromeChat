@@ -4,8 +4,8 @@ import { cn } from '@/lib/utils';
 export function Logo({ className }: { className?: string }) {
   return (
     <div className={cn('flex items-center gap-2', className)}>
-      <MessagesSquare className="h-8 w-8 md:h-6 md:w-6 text-primary" />
-      <h1 className="text-2xl md:text-xl font-bold tracking-tight">
+      <MessagesSquare className="h-10 w-10 text-primary md:h-6 md:w-6" />
+      <h1 className="text-3xl font-bold tracking-tight md:text-xl">
         <span className="text-primary">Chrome</span>
         <span className="text-foreground">Chat</span>
       </h1>
