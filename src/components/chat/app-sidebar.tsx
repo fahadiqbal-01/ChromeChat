@@ -60,10 +60,14 @@ export function AppSidebar({
 
   const chatsWithPartners = React.useMemo(() => {
     if (!chats || !allUsers) return [];
-    return chats.map(chat => ({
-      ...chat,
-      partner: getChatPartner(chat)
-    })).filter(chat => chat.partner); // Filter out chats where the partner doesn't exist
+    return chats.map(chat => {
+      const partnerId = chat.participantIds.find(id => id !== user.id);
+      const partner = allUsers.find(u => u.id === partnerId);
+      return {
+        ...chat,
+        partner: partner,
+      };
+    });
   }, [chats, allUsers, user.id]);
 
   const friends = React.useMemo(() => {
@@ -148,30 +152,32 @@ export function AppSidebar({
               const friend = chat.partner;
               const unreadCount = chat.unreadCount?.[user.id] || 0;
               
-              if (!friend) {
-                // This case should no longer happen due to the filter above, but as a fallback, we render nothing.
-                return null;
-              }
+              const friendName = friend ? friend.username : 'Deleted User';
+              const friendInitial = friend ? friend.username.charAt(0).toUpperCase() : 'D';
+              const isFriendActive = friend ? friend.isActive : false;
 
               return (
                 <SidebarMenuItem key={chat.id}>
                   <SidebarMenuButton
-                    onClick={() => handleSelectChat(chat.id)}
-                    isActive={selectedChatId === chat.id}
-                    className="justify-start w-full relative"
+                    onClick={() => friend ? handleSelectChat(chat.id) : onSelectDeletedUser()}
+                    isActive={selectedChatId === chat.id && !!friend}
+                    className={cn(
+                      'justify-start w-full relative',
+                      !friend && 'opacity-50 cursor-not-allowed'
+                    )}
                   >
                     <div className="relative">
                       <Avatar className="h-6 w-6">
                         <AvatarFallback className="text-xs">
-                          {friend.username.charAt(0).toUpperCase()}
+                          {friendInitial}
                         </AvatarFallback>
                       </Avatar>
-                      {friend.isActive && (
+                      {isFriendActive && (
                         <div className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-green-500 border-2 border-sidebar-background"></div>
                       )}
                     </div>
-                    <span className="truncate">{friend.username}</span>
-                    {unreadCount > 0 && (
+                    <span className="truncate">{friendName}</span>
+                    {unreadCount > 0 && friend && (
                       <Badge className="absolute right-2 h-5 w-5 justify-center p-0">{unreadCount}</Badge>
                     )}
                   </SidebarMenuButton>

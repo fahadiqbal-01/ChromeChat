@@ -14,7 +14,6 @@ import {
   addDoc,
   increment,
   updateDoc,
-  deleteDoc,
 } from 'firebase/firestore';
 import { SidebarInset, useSidebar } from '@/components/ui/sidebar';
 import { AppSidebar } from './app-sidebar';
