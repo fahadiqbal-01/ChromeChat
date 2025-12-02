@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -32,6 +31,7 @@ import {
 } from '@/firebase';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { usePresence } from '@/hooks/use-presence';
+import { acceptFriendRequest } from '@/ai/flows/accept-friend-request-flow';
 
 export function ChatLayout() {
   const { user } = useUser();
@@ -160,55 +160,29 @@ export function ChatLayout() {
   const handleAcceptRequest = async (request: FriendRequest) => {
     if (!user || !firestore) return;
 
-    const batch = writeBatch(firestore);
-
-    // 1. Create a new chat document
-    const sortedIds = [request.requesterId, request.recipientId].sort();
-    const newChatId = sortedIds.join('-');
-    const chatDocRef = doc(firestore, 'chats', newChatId);
-    const chatData = {
-      id: newChatId,
-      participantIds: sortedIds,
-      unreadCount: {
-        [request.requesterId]: 0,
-        [request.recipientId]: 0,
-      },
-    };
-    batch.set(chatDocRef, chatData);
-
-    // 2. Add each user to the other's friends list
-    const currentUserRef = doc(firestore, 'users', user.uid);
-    const requesterUserRef = doc(firestore, 'users', request.requesterId);
-    const currentUserUpdate = { friendIds: arrayUnion(request.requesterId) };
-    const requesterUserUpdate = { friendIds: arrayUnion(user.uid) };
-    batch.update(currentUserRef, currentUserUpdate);
-    batch.update(requesterUserRef, requesterUserUpdate);
-
-    // 3. Delete the friend request
-    const requestDocRef = doc(firestore, 'users', user.uid, 'friendRequests', request.id);
-    batch.delete(requestDocRef);
-
-    batch.commit()
-      .then(() => {
-        setSelectedChatId(newChatId);
-      })
-      .catch(async (serverError) => {
-        // Since a batch can fail on multiple documents, we create a generic
-        // error that points to the most likely permission issues.
-        const permissionError = new FirestorePermissionError({
-          // We provide a generalized path because a batch can fail on any of its operations
-          path: `users/${user.uid} or chats/${newChatId}`, 
-          operation: 'write',
-          requestResourceData: {
-            description: "Batch operation to accept friend request failed. Check permissions for creating a chat, updating user profiles (friendIds), and deleting a friend request.",
-            chatData,
-            currentUserUpdate,
-            requesterUserUpdate,
-            deletedRequestPath: requestDocRef.path
-          },
+    try {
+        const result = await acceptFriendRequest({
+            requesterId: request.requesterId,
+            recipientId: request.recipientId,
+            friendRequestId: request.id,
         });
-        errorEmitter.emit('permission-error', permissionError);
-      });
+        if (result.chatId) {
+            setSelectedChatId(result.chatId);
+        }
+    } catch (error) {
+        console.error("Error accepting friend request:", error);
+         errorEmitter.emit(
+            'permission-error',
+            new FirestorePermissionError({
+                path: `users/${user.uid}/friendRequests/${request.id}`,
+                operation: 'write',
+                requestResourceData: {
+                    description: "Failed to accept friend request via backend flow. Check flow logs and permissions.",
+                    request
+                }
+            })
+        );
+    }
   };
   
   const handleRejectRequest = async (request: FriendRequest) => {
@@ -240,7 +214,7 @@ export function ChatLayout() {
         const partner = existingUsers.find(u => u.id === partnerId);
         return { ...chat, partner };
     })
-    .filter(chat => chat.partner);
+    // .filter(chat => chat.partner);
 
   return (
     <div className="flex h-screen w-full">
