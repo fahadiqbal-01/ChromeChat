@@ -7,7 +7,4 @@ export const ai = genkit({
       apiKey: process.env.GEMINI_API_KEY,
     }),
   ],
-  logLevel: 'debug',
-  enableTracingAndMetrics: true,
-  model: 'googleai/gemini-2.5-flash',
 });
