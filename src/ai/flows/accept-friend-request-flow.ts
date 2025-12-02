@@ -5,7 +5,7 @@
  * the necessary Firestore writes atomically.
  */
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit/zod';
+import { z } from 'zod';
 import { admin } from '@/firebase/admin';
 import {FieldValue} from 'firebase-admin/firestore';
 
