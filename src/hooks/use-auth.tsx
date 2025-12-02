@@ -9,6 +9,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
+  updateProfile,
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -31,6 +32,9 @@ export const useAuth = () => {
         );
         const newUser = userCredential.user;
         if (newUser) {
+          // Update Firebase Auth profile
+          await updateProfile(newUser, { displayName: username });
+
           // Create a user profile document in Firestore
           const userProfile = {
             id: newUser.uid,
@@ -39,6 +43,7 @@ export const useAuth = () => {
           };
           const userDocRef = doc(firestore, 'users', newUser.uid);
           await setDoc(userDocRef, userProfile);
+          
           return newUser;
         }
         return null;
@@ -53,17 +58,13 @@ export const useAuth = () => {
   const login = useCallback(
     async (email: string, password: string) => {
       if (!auth) return null;
-      try {
-        const userCredential = await signInWithEmailAndPassword(
-          auth,
-          email,
-          password
-        );
-        return userCredential.user;
-      } catch (error) {
-        console.error('Login error:', error);
-        throw error;
-      }
+      // We don't need a try-catch here because the component calling it will handle it.
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      return userCredential.user;
     },
     [auth]
   );

@@ -27,6 +27,7 @@ import {
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '../logo';
+import { FirebaseError } from 'firebase/app';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -51,20 +52,22 @@ export function LoginForm() {
       const user = await login(values.email, values.password);
       if (user) {
         router.push('/');
-      } else {
-        toast({
+      }
+    } catch (error: any) {
+      if (error instanceof FirebaseError && error.code === 'auth/invalid-credential') {
+         toast({
           variant: 'destructive',
           title: 'Login Failed',
           description: 'Invalid email or password. Please try again.',
         });
-        form.reset();
+      } else {
+        toast({
+            variant: 'destructive',
+            title: 'An error occurred',
+            description: error.message || 'Something went wrong.',
+        });
       }
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'An error occurred',
-        description: error.message || 'Something went wrong.',
-      });
+      form.reset({ ...values, password: '' });
     }
   }
 
