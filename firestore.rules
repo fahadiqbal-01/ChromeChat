@@ -80,14 +80,14 @@ service cloud.firestore {
       return isChatMember(chatId) && resource != null && request.auth.uid == resource.data.senderId;
     }
     
-    function areFieldsEqual(fields) {
-      let areEqual = true;
+    function areFieldsImmutable(fields) {
+      let areImmutable = true;
       for (let field in fields) {
         if (request.resource.data[field] != resource.data[field]) {
-          areEqual = false;
+          areImmutable = false;
         }
       }
-      return areEqual;
+      return areImmutable;
     }
 
     /**
@@ -95,17 +95,16 @@ service cloud.firestore {
      * @path          /users/{userId}
      * @allow         (create) A new user can create their own profile document.
      *                (get/list) Any authenticated user can read profiles for search.
-     *                (update) A user can update their own profile, including presence status.
-     *                (update) A user can add a friend to their own friendIds array.
+     *                (update) A user can update their own profile, including presence status and friend list.
      * @deny          (create) A user cannot create a profile for someone else.
-     *                (update) A user cannot update another user's profile.
+     *                (update) A user cannot update another user's profile or change immutable fields.
      * @principle     Self-Creation and Ownership for a user's root document.
      *                Public-read access for authenticated users to enable discovery.
      */
     match /users/{userId} {
       allow get, list: if isSignedIn();
       allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && (areFieldsEqual(['id', 'username', 'email']) || request.resource.data.keys().hasOnly(['isActive', 'lastSeen', 'friendIds']));
+      allow update: if isExistingOwner(userId) && areFieldsImmutable(['id', 'username', 'email']);
       allow delete: if isExistingOwner(userId);
 
       /**
