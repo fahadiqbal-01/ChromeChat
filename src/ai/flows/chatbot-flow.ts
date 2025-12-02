@@ -14,29 +14,14 @@ const MessageSchema = z.object({
   content: z.string(),
 });
 
-const ChatInputSchema = z.object({
+export const ChatInputSchema = z.object({
   history: z.array(MessageSchema),
 });
 export type ChatInput = z.infer<typeof ChatInputSchema>;
 
-const ChatOutputSchema = z.string();
+export const ChatOutputSchema = z.string();
+export type ChatOutput = z.infer<typeof ChatOutputSchema>;
 
-const prompt = ai.definePrompt(
-  {
-    name: 'chatbotPrompt',
-    input: { schema: ChatInputSchema },
-    output: { schema: ChatOutputSchema },
-    prompt: `You are ChromeBot, a helpful and friendly AI assistant integrated into a chat application.
-
-Your responses should be concise, helpful, and conversational.
-
-Here is the conversation history:
-{{#each history}}
-- {{role}}: {{content}}
-{{/each}}
-`,
-  },
-);
 
 const chatbotFlow = ai.defineFlow(
   {
@@ -45,11 +30,27 @@ const chatbotFlow = ai.defineFlow(
     outputSchema: ChatOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
-    return output!;
+
+    const prompt = `You are ChromeBot, a helpful and friendly AI assistant integrated into a chat application.
+
+Your responses should be concise, helpful, and conversational.
+
+Here is the conversation history:
+{{#each history}}
+- {{role}}: {{content}}
+{{/each}}
+`;
+    
+    const { output } = await ai.generate({
+        prompt: prompt,
+        history: input.history.map(m => ({role: m.role, content: [{text: m.content}]})),
+    });
+    
+    return output?.text() || "I'm sorry, I couldn't generate a response.";
   }
 );
 
-export async function chatWithChromeBot(input: ChatInput): Promise<string> {
+
+export async function chatWithChromeBot(input: ChatInput): Promise<ChatOutput> {
     return chatbotFlow(input);
 }

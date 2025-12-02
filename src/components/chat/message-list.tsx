@@ -1,19 +1,20 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import type { Message } from '@/lib/types';
+import type { Message, User } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
 import { Avatar, AvatarFallback } from '../ui/avatar';
-import { Skeleton } from '../ui/skeleton';
+import { Bot } from 'lucide-react';
 
 interface MessageListProps {
   messages: Message[];
   currentUserId: string;
+  partner: User;
 }
 
-export function MessageList({ messages, currentUserId }: MessageListProps) {
+export function MessageList({ messages, currentUserId, partner }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -44,9 +45,15 @@ export function MessageList({ messages, currentUserId }: MessageListProps) {
             >
               {!isCurrentUser && (
                 <Avatar className="h-6 w-6">
+                   {partner.id === 'chromebot' ? (
+                     <AvatarFallback className="bg-primary text-primary-foreground">
+                        <Bot className="h-4 w-4" />
+                     </AvatarFallback>
+                   ) : (
                     <AvatarFallback>
-                        U
+                        {partner.username.charAt(0).toUpperCase()}
                     </AvatarFallback>
+                   )}
                 </Avatar>
               )}
               <div
