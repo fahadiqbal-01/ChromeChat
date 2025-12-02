@@ -157,9 +157,9 @@ export function ChatLayout() {
 
   const handleAcceptRequest = async (request: FriendRequest) => {
     if (!user || !firestore) return;
-  
+
     const batch = writeBatch(firestore);
-  
+
     // 1. Create a new chat document
     const sortedIds = [request.requesterId, request.recipientId].sort();
     const newChatId = sortedIds.join('-');
@@ -172,17 +172,17 @@ export function ChatLayout() {
         [request.recipientId]: 0,
       },
     });
-  
+
     // 2. Add each user to the other's friends list
     const currentUserRef = doc(firestore, 'users', user.uid);
     const requesterUserRef = doc(firestore, 'users', request.requesterId);
     batch.update(currentUserRef, { friendIds: arrayUnion(request.requesterId) });
     batch.update(requesterUserRef, { friendIds: arrayUnion(user.uid) });
-  
+
     // 3. Delete the friend request
     const requestDocRef = doc(firestore, 'users', user.uid, 'friendRequests', request.id);
     batch.delete(requestDocRef);
-  
+
     await batch.commit();
     setSelectedChatId(newChatId);
   };
