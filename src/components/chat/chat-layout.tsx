@@ -27,7 +27,7 @@ import {
   useFirestore,
   useUser,
 } from '@/firebase';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { usePresence } from '@/hooks/use-presence';
 
 export function ChatLayout() {
@@ -78,13 +78,10 @@ export function ChatLayout() {
     if (user && firestore) {
       const chatDocRef = doc(firestore, 'chats', chatId);
       const unreadCountKey = `unreadCount.${user.uid}`;
-      try {
-        await updateDoc(chatDocRef, {
-          [unreadCountKey]: 0,
-        });
-      } catch (e) {
-        console.error('Could not mark messages as read.', e);
-      }
+      // Use non-blocking update to correctly handle permission errors
+      updateDocumentNonBlocking(chatDocRef, {
+        [unreadCountKey]: 0,
+      });
     }
   };
 
@@ -103,7 +100,7 @@ export function ChatLayout() {
       'messages'
     );
 
-    await addDoc(messagesCol, {
+    addDoc(messagesCol, {
       chatId: selectedChatId,
       senderId: user.uid,
       text,
@@ -114,7 +111,7 @@ export function ChatLayout() {
     const chatDocRef = doc(firestore, 'chats', selectedChatId);
     const unreadCountKey = `unreadCount.${partnerId}`;
     
-    await updateDoc(chatDocRef, {
+    updateDocumentNonBlocking(chatDocRef, {
       [unreadCountKey]: increment(1),
     });
   };
