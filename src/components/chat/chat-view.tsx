@@ -6,6 +6,8 @@ import { MessageList } from './message-list';
 import { MessageInput } from './message-input';
 import { MessageSquare } from 'lucide-react';
 import { Logo } from '../logo';
+import { SidebarTrigger } from '../ui/sidebar';
+import { Button } from '../ui/button';
 
 interface ChatViewProps {
   user: User;
@@ -20,6 +22,13 @@ export function ChatView({ user, chat, onSendMessage, onClearChat, onUnfriend, a
   if (!chat) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 bg-background">
+        <div className="absolute left-4 top-4">
+          <SidebarTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <MessageSquare />
+            </Button>
+          </SidebarTrigger>
+        </div>
         <div className="flex flex-col items-center gap-2 text-center">
             <Logo className="mb-4" />
             <h2 className="text-2xl font-bold tracking-tight">Welcome to ChromeChat</h2>
