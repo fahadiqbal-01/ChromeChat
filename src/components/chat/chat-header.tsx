@@ -11,6 +11,9 @@ import {
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import type { User } from '@/lib/types';
 import { Avatar, AvatarFallback } from '../ui/avatar';
+import { cn } from '@/lib/utils';
+import { formatDistanceToNow } from 'date-fns';
+import type { Timestamp } from 'firebase/firestore';
 
 interface ChatHeaderProps {
   partner: User;
@@ -19,6 +22,13 @@ interface ChatHeaderProps {
 }
 
 export function ChatHeader({ partner, onClearChat, onUnfriend }: ChatHeaderProps) {
+  const toDate = (timestamp?: Timestamp): Date | null => {
+    if (!timestamp) return null;
+    return timestamp.toDate();
+  }
+  
+  const lastSeenDate = toDate(partner.lastSeen);
+
   return (
     <header className="flex h-16 items-center justify-between border-b bg-background px-4">
       <div className="flex items-center gap-3">
@@ -28,7 +38,18 @@ export function ChatHeader({ partner, onClearChat, onUnfriend }: ChatHeaderProps
                 {partner.username.charAt(0).toUpperCase()}
             </AvatarFallback>
         </Avatar>
-        <h2 className="text-lg font-semibold">{partner.username}</h2>
+        <div className="flex flex-col">
+          <h2 className="text-lg font-semibold">{partner.username}</h2>
+          {partner.isActive ? (
+            <p className="text-xs text-green-500">Online</p>
+          ) : (
+            lastSeenDate && (
+              <p className="text-xs text-muted-foreground">
+                Last seen {formatDistanceToNow(lastSeenDate, { addSuffix: true })}
+              </p>
+            )
+          )}
+        </div>
       </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
