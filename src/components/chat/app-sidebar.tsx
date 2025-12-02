@@ -33,6 +33,7 @@ interface AppSidebarProps {
   onLogout: () => void;
   selectedChatId?: string;
   friends: User[];
+  onAddFriend: (friendId: string) => void;
 }
 
 export function AppSidebar({
@@ -42,12 +43,13 @@ export function AppSidebar({
   onSelectChat,
   onLogout,
   selectedChatId,
-  friends
+  friends,
+  onAddFriend
 }: AppSidebarProps) {
   const { state } = useSidebar();
   const [searchTerm, setSearchTerm] = React.useState('');
   
-  const searchResults = searchTerm.length > 0 
+  const searchResults = searchTerm.length > 0
   ? allUsers.filter(u => 
       u.id !== user.id && 
       u.username.toLowerCase().includes(searchTerm.toLowerCase()) && 
@@ -59,6 +61,11 @@ export function AppSidebar({
     const partnerId = chat.participantIds.find(id => id !== user.id);
     return allUsers.find(u => u.id === partnerId);
   };
+  
+  const handleAddClick = (friendId: string) => {
+    onAddFriend(friendId);
+    setSearchTerm('');
+  }
 
   return (
     <Sidebar>
@@ -86,7 +93,7 @@ export function AppSidebar({
                 <SidebarMenuItem key={foundUser.id}>
                     <div className="flex w-full items-center justify-between p-2 text-sm">
                         <span>{foundUser.username}</span>
-                        <Button size="sm" variant="outline">Add</Button>
+                        <Button size="sm" variant="outline" onClick={() => handleAddClick(foundUser.id)}>Add</Button>
                     </div>
                 </SidebarMenuItem>
               ))}
@@ -97,9 +104,9 @@ export function AppSidebar({
         <SidebarGroup>
            <p className="px-2 text-xs font-semibold text-muted-foreground">Friends</p>
           <SidebarMenu>
-            {chats.map((chat) => {
-              const partner = getChatPartner(chat);
-              if (!partner) return null;
+            {friends.map((friend) => {
+              const chat = chats.find(c => c.participantIds.includes(friend.id));
+              if (!chat) return null;
               return (
                 <SidebarMenuItem key={chat.id}>
                   <SidebarMenuButton
@@ -109,10 +116,10 @@ export function AppSidebar({
                   >
                     <Avatar className="h-6 w-6">
                       <AvatarFallback className="text-xs">
-                        {partner.username.charAt(0).toUpperCase()}
+                        {friend.username.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="truncate">{partner.username}</span>
+                    <span className="truncate">{friend.username}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               );

@@ -24,9 +24,6 @@ export function ChatView({ user, chat, onSendMessage, onClearChat, onUnfriend, a
       <div className="flex h-full flex-col items-center justify-center gap-4 bg-background">
         <div className="absolute left-4 top-4">
           <SidebarTrigger>
-            <Button variant="ghost" size="icon">
-              <MessageSquare />
-            </Button>
           </SidebarTrigger>
         </div>
         <div className="flex flex-col items-center gap-2 text-center">
