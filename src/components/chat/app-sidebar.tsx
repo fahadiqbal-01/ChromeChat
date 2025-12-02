@@ -51,12 +51,22 @@ export function AppSidebar({
   const { state, setOpenMobile, isMobile } = useSidebar();
   const [searchTerm, setSearchTerm] = React.useState('');
   
+  const getChatPartner = (chat: Chat) => {
+    const partnerId = chat.participantIds.find(id => id !== user.id);
+    return allUsers.find(u => u.id === partnerId);
+  };
+
+  const validChats = React.useMemo(() => {
+    if (!chats || !allUsers) return [];
+    return chats.filter(chat => getChatPartner(chat));
+  }, [chats, allUsers, user.id]);
+
   const friends = React.useMemo(() => {
-    if (!user || !chats) return [];
-    const friendIds = chats.flatMap(c => c.participantIds).filter(id => id !== user.id);
+    if (!user || !validChats) return [];
+    const friendIds = validChats.flatMap(c => c.participantIds).filter(id => id !== user.id);
     const uniqueFriendIds = [...new Set(friendIds)];
     return allUsers.filter(u => uniqueFriendIds.includes(u.id));
-  }, [user, chats, allUsers]);
+  }, [user, validChats, allUsers]);
 
   const searchResults = searchTerm.length > 0
   ? allUsers.filter(u => 
@@ -65,11 +75,6 @@ export function AppSidebar({
       !friends.some(f => f.id === u.id)
     ) 
   : [];
-
-  const getChatPartner = (chat: Chat) => {
-    const partnerId = chat.participantIds.find(id => id !== user.id);
-    return allUsers.find(u => u.id === partnerId);
-  };
   
   const handleAddClick = (friend: User) => {
     onAddFriend(friend);
@@ -136,9 +141,9 @@ export function AppSidebar({
         <SidebarGroup>
            <p className="px-2 text-xs font-semibold text-muted-foreground mb-2">Friends</p>
           <SidebarMenu>
-            {chats.map((chat) => {
+            {validChats.map((chat) => {
               const friend = getChatPartner(chat);
-              if (!friend) return null; // If friend doesn't exist in allUsers, don't render them
+              if (!friend) return null;
               const unreadCount = chat.unreadCount?.[user.id] || 0;
               return (
                 <SidebarMenuItem key={chat.id}>
