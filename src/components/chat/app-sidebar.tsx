@@ -30,7 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface AppSidebarProps {
   user: User;
-  chats: Chat[];
+  chats: (Chat & { partner?: User })[];
   allUsers: User[];
   onSelectChat: (chatId: string) => void;
   onLogout: () => void;
@@ -53,22 +53,10 @@ export function AppSidebar({
   const [searchTerm, setSearchTerm] = React.useState('');
   const { toast } = useToast();
   
-  const chatsWithPartners = React.useMemo(() => {
-    if (!chats || !allUsers) return [];
-    return chats.map(chat => {
-      const partnerId = chat.participantIds.find(id => id !== user.id);
-      const partner = allUsers.find(u => u.id === partnerId);
-      return {
-        ...chat,
-        partner: partner,
-      };
-    });
-  }, [chats, allUsers, user.id]);
-
   const friends = React.useMemo(() => {
-    if (!user || !chatsWithPartners) return [];
-    return chatsWithPartners.map(c => c.partner).filter((p): p is User => !!p);
-  }, [user, chatsWithPartners]);
+    if (!user || !chats) return [];
+    return chats.map(c => c.partner).filter((p): p is User => !!p);
+  }, [user, chats]);
 
   const searchResults = searchTerm.length > 0
   ? allUsers.filter(u => 
@@ -83,8 +71,16 @@ export function AppSidebar({
     setSearchTerm('');
   }
 
-  const handleSelectChat = (chatId: string) => {
-    onSelectChat(chatId);
+  const handleSelectChat = (chat: Chat & { partner?: User }) => {
+    if (!chat.partner) {
+       toast({
+        variant: 'destructive',
+        title: 'User Unavailable',
+        description: 'This user has deleted their account and can no longer receive messages.',
+      });
+      return;
+    }
+    onSelectChat(chat.id);
     if(isMobile) {
         setOpenMobile(false);
     }
@@ -143,28 +139,30 @@ export function AppSidebar({
         <SidebarGroup>
            <p className="px-2 text-xs font-semibold text-muted-foreground mb-2">Friends</p>
           <SidebarMenu>
-            {chatsWithPartners.filter(chat => chat.partner).map((chat) => {
-              const friend = chat.partner!;
+            {chats.map((chat) => {
+              const friend = chat.partner;
               const unreadCount = chat.unreadCount?.[user.id] || 0;
+              const username = friend ? friend.username : 'Deleted User';
+              const isFriendActive = friend?.isActive ?? false;
 
               return (
                 <SidebarMenuItem key={chat.id}>
                   <SidebarMenuButton
-                    onClick={() => handleSelectChat(chat.id)}
+                    onClick={() => handleSelectChat(chat)}
                     isActive={selectedChatId === chat.id}
                     className="justify-start w-full relative"
                   >
                     <div className="relative">
                       <Avatar className="h-6 w-6">
                         <AvatarFallback className="text-xs">
-                          {friend.username.charAt(0).toUpperCase()}
+                          {username.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      {friend.isActive && (
+                      {isFriendActive && (
                         <div className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-green-500 border-2 border-sidebar-background"></div>
                       )}
                     </div>
-                    <span className="truncate">{friend.username}</span>
+                    <span className="truncate">{username}</span>
                     {unreadCount > 0 && (
                       <Badge className="absolute right-2 h-5 w-5 justify-center p-0">{unreadCount}</Badge>
                     )}

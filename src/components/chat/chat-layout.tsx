@@ -27,7 +27,7 @@ import {
   useFirestore,
   useUser,
 } from '@/firebase';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { usePresence } from '@/hooks/use-presence';
 
 export function ChatLayout() {
@@ -100,7 +100,7 @@ export function ChatLayout() {
       'messages'
     );
 
-    addDoc(messagesCol, {
+    addDocumentNonBlocking(messagesCol, {
       chatId: selectedChatId,
       senderId: user.uid,
       text,
@@ -139,23 +139,27 @@ export function ChatLayout() {
     const newChatId = sortedIds.join('-');
     const chatDocRef = doc(firestore, 'chats', newChatId);
   
-    const chatDoc = await getDoc(chatDocRef);
-  
-    if (chatDoc.exists()) {
-      setSelectedChatId(chatDoc.id);
-    } else {
-      const newChatData: Partial<Chat> = {
-        id: newChatId,
-        participantIds: sortedIds,
-        unreadCount: {
-          [user.uid]: 0,
-          [friend.id]: 0,
-        },
-      };
-      // Use the non-blocking version to ensure permission errors are caught by the global handler.
-      setDocumentNonBlocking(chatDocRef, newChatData);
-      setSelectedChatId(newChatId);
+    try {
+        const chatDoc = await getDoc(chatDocRef);
+    
+        if (chatDoc.exists()) {
+          setSelectedChatId(chatDoc.id);
+        } else {
+          const newChatData: Partial<Chat> = {
+            id: newChatId,
+            participantIds: sortedIds,
+            unreadCount: {
+              [user.uid]: 0,
+              [friend.id]: 0,
+            },
+          };
+          setDocumentNonBlocking(chatDocRef, newChatData);
+          setSelectedChatId(newChatId);
+        }
+    } catch(e) {
+        console.log(e);
     }
+
   
     if (isMobile) {
       setOpenMobile(false);
@@ -177,13 +181,23 @@ export function ChatLayout() {
     email: user.email!,
     username: user.displayName || user.email?.split('@')[0] || 'User',
   };
+  
+  const existingUsers = allUsers || [];
+  const chatsWithPartners = (chats || []).map(chat => {
+    const partnerId = chat.participantIds.find(id => id !== currentUser.id);
+    const partner = existingUsers.find(u => u.id === partnerId);
+    return {
+      ...chat,
+      partner,
+    };
+  }).filter(chat => chat.partner);
 
   return (
     <div className="flex h-screen w-full">
       <AppSidebar
         user={currentUser}
-        chats={chats || []}
-        allUsers={allUsers || []}
+        chats={chatsWithPartners}
+        allUsers={existingUsers}
         onSelectChat={handleSelectChat}
         onLogout={logout}
         selectedChatId={selectedChatId}
@@ -196,7 +210,7 @@ export function ChatLayout() {
           chat={selectedChat}
           onSendMessage={handleSendMessage}
           onClearChat={handleClearChat}
-          allUsers={allUsers}
+          allUsers={existingUsers}
         />
       </SidebarInset>
     </div>
