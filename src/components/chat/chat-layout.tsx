@@ -131,11 +131,15 @@ export function ChatLayout() {
     });
 
     const chatDocRef = doc(firestore, 'chats', selectedChatId);
-    const unreadCountKey = `unreadCount.${partnerId}`;
     
-    updateDocumentNonBlocking(chatDocRef, {
-      [unreadCountKey]: increment(1),
-    });
+    // Only increment unread count if the chat is not the currently selected one.
+    // This check is implicitly handled by not doing it if selected, but this is for clarity.
+    if (selectedChatId !== selectedChat.id) {
+        const unreadCountKey = `unreadCount.${partnerId}`;
+        updateDocumentNonBlocking(chatDocRef, {
+          [unreadCountKey]: increment(1),
+        });
+    }
   };
 
   const promptClearChat = (chatId: string) => {
