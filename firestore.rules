@@ -17,13 +17,13 @@
  * - Friend Requests: All friend requests are stored in a subcollection under the
  *   *recipient's* user document, ensuring only they can read, accept, or reject them.
  * - Chat Access: Access to `/chats` and their sub-collections is controlled by a
- *   denormalized `members` array on each `/chats/{chatId}` document. This avoids
+ *   denormalized `participantIds` array on each `/chats/{chatId}` document. This avoids
  *   costly `get` calls when securing access to chat messages and is highly performant.
  * - List Operations: Listing all chats is disallowed to prevent data leakage.
  *   Clients must have a pre-existing list of chat IDs (e.g., stored on a user
  *   profile) to access chat documents.
  *
- * Denormalization for Authorization: The `members` array (containing user UIDs) is
+ * Denormalization for Authorization: The `participantIds` array (containing user UIDs) is
  * denormalized onto each `/chats/{chatId}` document. This is the core mechanism
  * that allows security rules for the `/messages` subcollection to efficiently verify
  * a user's membership in the parent chat without extra reads on other collections.
@@ -65,11 +65,11 @@ service cloud.firestore {
 
     /**
      * Returns true if the authenticated user is a member of the specified chat.
-     * This relies on a denormalized `members` array on the chat document.
+     * This relies on a denormalized `participantIds` array on the chat document.
      */
     function isChatMember(chatId) {
       let chat = get(/databases/$(database)/documents/chats/$(chatId));
-      return isSignedIn() && chat != null && request.auth.uid in chat.data.members;
+      return isSignedIn() && chat != null && request.auth.uid in chat.data.participantIds;
     }
 
     /**
@@ -123,7 +123,7 @@ service cloud.firestore {
      *                (list) A user can only list chats they are a member of.
      * @deny          (list) A user cannot list all chats in the database if they are not a member.
      *                (get) A non-member cannot read chat metadata.
-     * @principle     Shared Access (Closed Collaborators) using a denormalized `members` list.
+     * @principle     Shared Access (Closed Collaborators) using a denormalized `participantIds` list.
      *                Disallows listing to prevent data leakage, unless filtered by participant.
      */
     match /chats/{chatId} {
