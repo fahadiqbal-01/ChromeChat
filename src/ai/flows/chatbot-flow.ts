@@ -1,6 +1,5 @@
 'use server';
 
-import { OpenRouter } from '@openrouter/sdk';
 import {
   ChatInputSchema,
   ChatOutputSchema,
@@ -9,10 +8,6 @@ import {
   AiMessage,
 } from './types';
 import { z } from 'zod';
-
-const openRouter = new OpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY,
-});
 
 const ChatbotFlowInput = ChatInputSchema;
 type ChatbotFlowInput = z.infer<typeof ChatbotFlowInput>;
@@ -30,11 +25,24 @@ async function chatbotFlow(input: ChatbotFlowInput): Promise<ChatbotFlowOutput> 
   ];
 
   try {
-    const completion = await openRouter.chat.completions.create({
-      model: 'openai/gpt-4o',
-      messages: messages.map((m) => ({ role: m.role, content: m.content })),
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'openai/gpt-4o',
+        messages: messages.map((m) => ({ role: m.role, content: m.content })),
+      }),
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`OpenRouter API error: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    const completion = await response.json();
     const message = completion.choices[0].message?.content;
     
     if (message) {
