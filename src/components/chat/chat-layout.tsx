@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -27,6 +28,16 @@ import {
 } from '@/firebase';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { usePresence } from '@/hooks/use-presence';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 
 export function ChatLayout() {
@@ -35,6 +46,7 @@ export function ChatLayout() {
   const firestore = useFirestore();
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const { setOpenMobile, isMobile } = useSidebar();
+  const [chatToClear, setChatToClear] = useState<string | null>(null);
   
   usePresence(user?.uid);
 
@@ -126,20 +138,28 @@ export function ChatLayout() {
     });
   };
 
-  const handleClearChat = async (chatId: string) => {
-    if (!firestore || !user) return;
+  const promptClearChat = (chatId: string) => {
+    setChatToClear(chatId);
+  };
+
+  const handleClearChat = async () => {
+    if (!firestore || !user || !chatToClear) return;
     
     const messagesQuery = query(
-      collection(firestore, 'chats', chatId, 'messages')
+      collection(firestore, 'chats', chatToClear, 'messages')
     );
     const messagesSnapshot = await getDocs(messagesQuery);
-    if (messagesSnapshot.empty) return;
+    if (messagesSnapshot.empty) {
+      setChatToClear(null);
+      return;
+    }
 
     const batch = writeBatch(firestore);
     messagesSnapshot.docs.forEach((doc) => {
       batch.delete(doc.ref);
     });
     await batch.commit();
+    setChatToClear(null);
   };
 
   const handleAddFriend = async (friend: User) => {
@@ -266,10 +286,25 @@ export function ChatLayout() {
           currentUser={currentUser}
           chat={selectedChat}
           onSendMessage={handleSendMessage}
-          onClearChat={handleClearChat}
+          onClearChat={promptClearChat}
           allUsers={existingUsers}
         />
       </SidebarInset>
+       <AlertDialog open={!!chatToClear} onOpenChange={(open) => !open && setChatToClear(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your
+              message history with this user.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setChatToClear(null)}>No</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClearChat}>Yes</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
