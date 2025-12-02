@@ -22,12 +22,13 @@ import {
 } from '@/components/ui/sidebar';
 import { AppSidebar } from './app-sidebar';
 import { ChatView } from './chat-view';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth as useFirebaseAuthHook } from '@/hooks/use-auth';
 import type { Chat, Message, User } from '@/lib/types';
-import { useCollection, useMemoFirebase, useFirestore } from '@/firebase';
+import { useCollection, useMemoFirebase, useFirestore, useUser } from '@/firebase';
 
 export function ChatLayout() {
-  const { user, logout } = useAuth();
+  const { user } = useUser();
+  const { logout } = useFirebaseAuthHook();
   const firestore = useFirestore();
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const { setOpenMobile, isMobile } = useSidebar();

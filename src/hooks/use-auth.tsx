@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  useUser,
   useAuth as useFirebaseAuth,
   useFirestore,
 } from '@/firebase';
@@ -18,13 +17,13 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect } from 'react';
 
 export const useAuth = () => {
-  const { user, isUserLoading: loading, userError } = useUser();
   const auth = useFirebaseAuth();
   const firestore = useFirestore();
   const router = useRouter();
 
   useEffect(() => {
     if (auth) {
+      // This ensures the session is persisted across browser tabs and sessions.
       setPersistence(auth, browserLocalPersistence);
     }
   }, [auth]);
@@ -66,7 +65,7 @@ export const useAuth = () => {
   const login = useCallback(
     async (email: string, password: string) => {
       if (!auth) return null;
-      // We don't need a try-catch here because the component calling it will handle it.
+      // The component calling this will handle try-catch for UI feedback.
       const userCredential = await signInWithEmailAndPassword(
         auth,
         email,
@@ -83,5 +82,5 @@ export const useAuth = () => {
     router.push('/login');
   }, [auth, router]);
 
-  return { user, loading, userError, signup, login, logout };
+  return { signup, login, logout };
 };

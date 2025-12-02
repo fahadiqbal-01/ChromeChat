@@ -1,6 +1,5 @@
 'use client';
 
-import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { ChatLayout } from '@/components/chat/chat-layout';
@@ -9,7 +8,7 @@ import { useUser } from '@/firebase';
 import { SidebarProvider } from '@/components/ui/sidebar';
 
 export default function HomePage() {
-  const { user, loading } = useUser();
+  const { user, isUserLoading: loading } = useUser();
   const router = useRouter();
 
   useEffect(() => {
