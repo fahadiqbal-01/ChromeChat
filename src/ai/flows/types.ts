@@ -1,7 +1,7 @@
-import { z } from 'genkit';
+import { z } from 'zod';
 
 export const MessageSchema = z.object({
-  role: z.enum(['user', 'model']),
+  role: z.enum(['user', 'model', 'system']),
   content: z.string(),
 });
 export type AiMessage = z.infer<typeof MessageSchema>;

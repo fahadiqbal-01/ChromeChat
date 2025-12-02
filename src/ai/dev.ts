@@ -1,3 +1,2 @@
 'use server';
-// Flows will be imported for their side effects in this file.
-import './flows/chatbot-flow';
+// This file is kept for potential future use with Genkit but is not currently used by the chatbot.

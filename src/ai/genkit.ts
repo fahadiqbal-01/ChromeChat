@@ -1,13 +1,2 @@
-import * as dotenv from 'dotenv';
-dotenv.config();
-
-import { genkit } from 'genkit';
-import { googleAI } from '@genkit-ai/google-genai';
-
-export const ai = genkit({
-  plugins: [
-    googleAI({
-      apiKey: process.env.GEMINI_API_KEY,
-    }),
-  ],
-});
+// This file is no longer needed for the chatbot implementation.
+// It is being left in case other Genkit features are added later.
