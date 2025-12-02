@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   collection,
   query,
@@ -27,7 +27,8 @@ import {
   useUser,
 } from '@/firebase';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-
+import { chatWithChromeBot } from '@/ai/flows/chatbot-flow';
+import type { AiMessage } from '@/ai/flows/types';
 
 export function ChatLayout() {
   const { user } = useUser();
@@ -35,9 +36,13 @@ export function ChatLayout() {
   const firestore = useFirestore();
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const { setOpenMobile, isMobile } = useSidebar();
+  const [isAiChatActive, setAiChatActive] = useState(false);
+  const [aiChatHistory, setAiChatHistory] = useState<AiMessage[]>([]);
+  const [isAiLoading, setAiLoading] = useState(false);
 
   const handleLogoClick = () => {
     setSelectedChatId(null);
+    setAiChatActive(false);
     if (isMobile) {
       setOpenMobile(false);
     }
@@ -62,11 +67,12 @@ export function ChatLayout() {
   const { data: chats } = useCollection<Chat>(chatsQuery);
 
   const selectedChat = useMemo(() => {
-    if (!selectedChatId) return null;
+    if (isAiChatActive || !selectedChatId) return null;
     return chats?.find((c) => c.id === selectedChatId) || null;
-  }, [selectedChatId, chats]);
+  }, [selectedChatId, chats, isAiChatActive]);
 
   const handleSelectChat = async (chatId: string) => {
+    setAiChatActive(false);
     setSelectedChatId(chatId);
     if (isMobile) {
       setOpenMobile(false);
@@ -85,7 +91,19 @@ export function ChatLayout() {
     }
   };
 
+  const handleSelectAiChat = () => {
+    setAiChatActive(true);
+    setSelectedChatId(null);
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
   const handleSendMessage = async (text: string) => {
+    if (isAiChatActive) {
+      handleSendAiMessage(text);
+      return;
+    }
     if (!selectedChatId || !user || !firestore) return;
     if (!selectedChat) return;
 
@@ -115,8 +133,42 @@ export function ChatLayout() {
     });
   };
 
+  const handleSendAiMessage = async (prompt: string) => {
+    if (!prompt) return;
+
+    const newUserMessage: AiMessage = { role: 'user', content: prompt };
+    const newHistory: AiMessage[] = [...aiChatHistory, newUserMessage];
+    
+    setAiChatHistory(newHistory);
+    setAiLoading(true);
+
+    try {
+      const response = await chatWithChromeBot({
+        history: newHistory.slice(0, -1),
+        prompt,
+      });
+
+      const botMessage: AiMessage = { role: 'model', content: response };
+      setAiChatHistory((prevHistory) => [...prevHistory, botMessage]);
+    } catch (error) {
+      console.error('Error chatting with bot:', error);
+      const errorMessage: AiMessage = {
+        role: 'model',
+        content: 'Sorry, I ran into an error. Please try again.',
+      };
+      setAiChatHistory((prevHistory) => [...prevHistory, errorMessage]);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const handleClearChat = async (chatId: string) => {
     if (!firestore) return;
+    
+    if (isAiChatActive && chatId === 'chromebot') {
+      setAiChatHistory([]);
+      return;
+    }
 
     const messagesQuery = query(
       collection(firestore, 'chats', chatId, 'messages')
@@ -168,6 +220,7 @@ export function ChatLayout() {
       setDocumentNonBlocking(chatDocRef, newChatData, { merge: false });
       setSelectedChatId(newChatId);
     }
+    setAiChatActive(false);
 
     if (isMobile) {
       setOpenMobile(false);
@@ -201,6 +254,8 @@ export function ChatLayout() {
         selectedChatId={selectedChatId}
         onAddFriend={handleAddFriendAndStartChat}
         onLogoClick={handleLogoClick}
+        onSelectAiChat={handleSelectAiChat}
+        isAiChatSelected={isAiChatActive}
       />
       <SidebarInset className="flex-1 flex flex-col">
         <ChatView
@@ -210,6 +265,9 @@ export function ChatLayout() {
           onClearChat={handleClearChat}
           onUnfriend={handleUnfriend}
           allUsers={allUsers}
+          isAiChatActive={isAiChatActive}
+          aiChatHistory={aiChatHistory}
+          isAiLoading={isAiLoading}
         />
       </SidebarInset>
     </div>

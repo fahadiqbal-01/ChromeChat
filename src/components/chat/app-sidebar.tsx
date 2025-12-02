@@ -14,7 +14,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { LogOut, Search, User as UserIcon } from 'lucide-react';
+import { Bot, LogOut, Search, User as UserIcon } from 'lucide-react';
 import type { User, Chat } from '@/lib/types';
 import { Logo } from '../logo';
 import {
@@ -34,6 +34,8 @@ interface AppSidebarProps {
   selectedChatId?: string | null;
   onAddFriend: (friend: User) => void;
   onLogoClick: () => void;
+  onSelectAiChat: () => void;
+  isAiChatSelected: boolean;
 }
 
 export function AppSidebar({
@@ -44,7 +46,9 @@ export function AppSidebar({
   onLogout,
   selectedChatId,
   onAddFriend,
-  onLogoClick
+  onLogoClick,
+  onSelectAiChat,
+  isAiChatSelected,
 }: AppSidebarProps) {
   const { state, setOpenMobile, isMobile } = useSidebar();
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -81,6 +85,13 @@ export function AppSidebar({
     }
   }
 
+  const handleSelectAiChat = () => {
+    onSelectAiChat();
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
   return (
     <Sidebar>
       <SidebarHeader>
@@ -100,6 +111,9 @@ export function AppSidebar({
               <p className="truncate font-semibold">{user.username}</p>
             </div>
           )}
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleSelectAiChat} >
+            <Bot />
+          </Button>
         </div>
       </SidebarHeader>
       <SidebarContent className="p-2">
@@ -130,6 +144,26 @@ export function AppSidebar({
             </SidebarMenu>
           </SidebarGroup>
         )}
+        
+        <SidebarGroup>
+          <p className="px-2 text-xs font-semibold text-muted-foreground mb-2">AI Chat</p>
+          <SidebarMenu>
+             <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={handleSelectAiChat}
+                isActive={isAiChatSelected}
+                className="justify-start w-full relative"
+              >
+                <Avatar className="h-6 w-6">
+                  <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                    <Bot size={14}/>
+                  </AvatarFallback>
+                </Avatar>
+                <span className="truncate">ChromeBot</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroup>
 
         <SidebarGroup>
            <p className="px-2 text-xs font-semibold text-muted-foreground mb-2">Friends</p>
@@ -142,7 +176,7 @@ export function AppSidebar({
                 <SidebarMenuItem key={chat.id}>
                   <SidebarMenuButton
                     onClick={() => handleSelectChat(chat.id)}
-                    isActive={selectedChatId === chat.id}
+                    isActive={selectedChatId === chat.id && !isAiChatSelected}
                     className="justify-start w-full relative"
                   >
                     <Avatar className="h-6 w-6">

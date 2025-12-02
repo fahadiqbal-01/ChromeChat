@@ -11,7 +11,7 @@ export interface Message {
   chatId: string;
   senderId: string;
   text: string;
-  timestamp: Timestamp | number;
+  timestamp: Timestamp;
   read: boolean;
 }
 
