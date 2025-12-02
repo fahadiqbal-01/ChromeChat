@@ -14,6 +14,7 @@ import {
   deleteDoc,
   doc,
   setDoc,
+  getDoc,
 } from 'firebase/firestore';
 import {
   SidebarProvider,
@@ -31,7 +32,7 @@ export function ChatLayout() {
   const { logout } = useFirebaseAuthHook();
   const firestore = useFirestore();
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
-  const { setOpenMobile, isMobile } = useSidebar();
+  const { setOpenMobile } = useSidebar();
 
   // Memoize Firestore queries
   const usersQuery = useMemoFirebase(
@@ -59,9 +60,7 @@ export function ChatLayout() {
 
   const handleSelectChat = (chatId: string) => {
     setSelectedChatId(chatId);
-    if (isMobile) {
-      setOpenMobile(false);
-    }
+    setOpenMobile(false);
   };
 
   const handleSendMessage = async (text: string) => {
@@ -88,6 +87,8 @@ export function ChatLayout() {
     );
     const messagesSnapshot = await getDocs(messagesQuery);
 
+    if (messagesSnapshot.empty) return;
+    
     const batch = writeBatch(firestore);
     messagesSnapshot.docs.forEach((doc) => {
       batch.delete(doc.ref);
@@ -100,10 +101,15 @@ export function ChatLayout() {
 
     const sortedIds = [user.uid, friendId].sort();
     const chatIdToDelete = sortedIds.join('-');
+    
+    // First, delete all messages in the subcollection
+    await handleClearChat(chatIdToDelete);
 
+    // Then, delete the chat document itself
     const chatDocRef = doc(firestore, 'chats', chatIdToDelete);
     await deleteDoc(chatDocRef);
 
+    // Finally, reset the UI
     if (selectedChatId === chatIdToDelete) {
       setSelectedChatId(null);
     }
@@ -116,12 +122,10 @@ export function ChatLayout() {
     const newChatId = sortedIds.join('-');
 
     const chatDocRef = doc(firestore, 'chats', newChatId);
-    const chatSnapshot = await getDocs(
-      query(collection(firestore, 'chats'), where('__name__', '==', newChatId), limit(1))
-    );
-
-    if (!chatSnapshot.empty) {
-      setSelectedChatId(chatSnapshot.docs[0].id);
+    const chatDoc = await getDoc(chatDocRef);
+    
+    if (chatDoc.exists()) {
+      setSelectedChatId(chatDoc.id);
     } else {
       await setDoc(chatDocRef, {
         participantIds: sortedIds,
@@ -129,9 +133,7 @@ export function ChatLayout() {
       });
       setSelectedChatId(newChatId);
     }
-    if (isMobile) {
-      setOpenMobile(false);
-    }
+    setOpenMobile(false);
   };
 
   if (!user || !allUsers) return null;
