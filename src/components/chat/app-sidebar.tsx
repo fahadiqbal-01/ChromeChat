@@ -85,7 +85,7 @@ export function AppSidebar({
     <Sidebar>
       <SidebarHeader>
         <div className="p-2 pt-4">
-            <Button variant="ghost" onClick={onLogoClick} className="w-full justify-start p-0 h-auto">
+            <Button variant="ghost" onClick={onLogoClick} className="w-full justify-start p-0 h-auto hover:bg-transparent">
                 <Logo />
             </Button>
         </div>
