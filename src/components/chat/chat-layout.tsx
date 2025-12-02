@@ -39,6 +39,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { playFriendRequestSound, playMessageSentSound } from '@/lib/audio';
 
 
 export function ChatLayout() {
@@ -101,32 +102,18 @@ export function ChatLayout() {
   
     if (user && firestore) {
       const chatDocRef = doc(firestore, 'chats', chatId);
-      const userDocRef = doc(firestore, 'users', user.uid);
   
-      // Use a write batch to perform atomic updates
-      const batch = writeBatch(firestore);
-      
-      // Reset the unread count for the current user in this chat
-      batch.update(chatDocRef, {
-        [`unreadCount.${user.uid}`]: 0
-      });
+      const chatData = chats?.find(c => c.id === chatId);
+      // Only reset unread count if it's greater than 0
+      if (chatData?.unreadCount && chatData.unreadCount[user.uid] > 0) {
+        updateDocumentNonBlocking(chatDocRef, {
+          [`unreadCount.${user.uid}`]: 0
+        });
+      }
   
       // Track the currently open chat for presence
-      batch.update(userDocRef, { activeChatId: chatId });
-  
-      // Commit the batch
-      await batch.commit().catch(error => {
-        const permissionError = new FirestorePermissionError({
-          path: `chats/${chatId} or users/${user.uid}`,
-          operation: 'update',
-          requestResourceData: {
-            description: 'Failed to update chat state on selection.',
-            unreadCountReset: { [`unreadCount.${user.uid}`]: 0 },
-            activeChatUpdate: { activeChatId: chatId },
-          },
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      });
+      const userDocRef = doc(firestore, 'users', user.uid);
+      updateDocumentNonBlocking(userDocRef, { activeChatId: chatId });
     }
   };
 
@@ -134,6 +121,8 @@ export function ChatLayout() {
   const handleSendMessage = async (text: string) => {
     if (!selectedChatId || !user || !firestore) return;
     if (!selectedChat) return;
+
+    playMessageSentSound();
   
     const partnerId = selectedChat.participantIds.find((id) => id !== user.uid);
     if (!partnerId) return;
@@ -203,6 +192,8 @@ export function ChatLayout() {
   const handleAddFriend = async (friend: User) => {
     if (!user || !firestore) return;
     
+    playFriendRequestSound();
+
     const friendRequestRef = collection(firestore, `users/${friend.id}/friendRequests`);
     addDocumentNonBlocking(friendRequestRef, {
       requesterId: user.uid,
@@ -213,6 +204,8 @@ export function ChatLayout() {
 
  const handleAcceptRequest = async (request: FriendRequest) => {
     if (!user || !firestore) return;
+
+    playFriendRequestSound();
 
     const batch = writeBatch(firestore);
     const { requesterId, recipientId } = request;

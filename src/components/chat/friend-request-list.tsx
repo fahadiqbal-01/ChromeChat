@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { FriendRequest, User } from '@/lib/types';
@@ -5,6 +6,8 @@ import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Button } from '../ui/button';
 import { Check, X } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem } from '../ui/sidebar';
+import { playFriendRequestSound } from '@/lib/audio';
+
 
 interface FriendRequestListProps {
   requests: FriendRequest[];
@@ -19,6 +22,16 @@ export function FriendRequestList({
   onAccept,
   onReject,
 }: FriendRequestListProps) {
+
+  const handleAccept = (request: FriendRequest) => {
+    playFriendRequestSound();
+    onAccept(request);
+  }
+
+  const handleReject = (request: FriendRequest) => {
+    onReject(request);
+  }
+
   return (
     <SidebarMenu>
       {requests.map((request) => {
@@ -37,10 +50,10 @@ export function FriendRequestList({
                     <span className="truncate">{requester.username}</span>
                 </div>
                 <div className="flex gap-1">
-                    <Button size="icon" variant="ghost" className="h-8 w-8 md:h-7 md:w-7" onClick={() => onAccept(request)}>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 md:h-7 md:w-7" onClick={() => handleAccept(request)}>
                         <Check className="h-5 w-5 md:h-4 md:w-4 text-green-500"/>
                     </Button>
-                    <Button size="icon" variant="ghost" className="h-8 w-8 md:h-7 md:w-7" onClick={() => onReject(request)}>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 md:h-7 md:w-7" onClick={() => handleReject(request)}>
                         <X className="h-5 w-5 md:h-4 md:w-4 text-red-500"/>
                     </Button>
                 </div>
