@@ -76,8 +76,12 @@ export function ChatLayout() {
     if (isMobile) {
       setOpenMobile(false);
     }
+  
+    const chat = chats?.find(c => c.id === chatId);
+    const partnerId = chat?.participantIds.find(id => id !== user?.uid);
+    const partnerExists = allUsers?.some(u => u.id === partnerId);
 
-    if (user && firestore) {
+    if (user && firestore && partnerExists) {
       const chatDocRef = doc(firestore, 'chats', chatId);
       const unreadCountKey = `unreadCount.${user.uid}`;
       try {
