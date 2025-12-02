@@ -1,31 +1,30 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   collection,
   query,
   where,
   addDoc,
   serverTimestamp,
-  orderBy,
   getDocs,
-  limit,
-  writeBatch,
-  deleteDoc,
   doc,
   setDoc,
   getDoc,
 } from 'firebase/firestore';
-import {
-  SidebarProvider,
-  SidebarInset,
-  useSidebar,
-} from '@/components/ui/sidebar';
+import { SidebarInset, useSidebar } from '@/components/ui/sidebar';
 import { AppSidebar } from './app-sidebar';
 import { ChatView } from './chat-view';
 import { useAuth as useFirebaseAuthHook } from '@/hooks/use-auth';
-import type { Chat, Message, User } from '@/lib/types';
-import { useCollection, useMemoFirebase, useFirestore, useUser } from '@/firebase';
+import type { Chat, User } from '@/lib/types';
+import {
+  useCollection,
+  useMemoFirebase,
+  useFirestore,
+  useUser,
+  addDocumentNonBlocking,
+  deleteDocumentNonBlocking,
+} from '@/firebase';
 
 export function ChatLayout() {
   const { user } = useUser();
@@ -60,10 +59,14 @@ export function ChatLayout() {
 
   const handleSelectChat = (chatId: string) => {
     setSelectedChatId(chatId);
-    setOpenMobile(false);
+    if (isMobile) {
+      setOpenMobile(false);
+    }
   };
 
-  const handleSendMessage = async (text: string) => {
+  const { isMobile } = useSidebar();
+
+  const handleSendMessage = (text: string) => {
     if (!selectedChatId || !user || !firestore) return;
 
     const messagesCol = collection(
@@ -72,7 +75,7 @@ export function ChatLayout() {
       selectedChatId,
       'messages'
     );
-    await addDoc(messagesCol, {
+    addDocumentNonBlocking(messagesCol, {
       chatId: selectedChatId,
       senderId: user.uid,
       text,
@@ -85,15 +88,24 @@ export function ChatLayout() {
     const messagesQuery = query(
       collection(firestore, 'chats', chatId, 'messages')
     );
-    const messagesSnapshot = await getDocs(messagesQuery);
+    // getDocs is a one-time read, which is fine to await.
+    // The permission error might happen here or in the subsequent deletes.
+    const messagesSnapshot = await getDocs(messagesQuery).catch((e) => {
+      // If reading the collection fails, emit a contextual error.
+      const contextualError = new FirestorePermissionError({
+        operation: 'list',
+        path: `chats/${chatId}/messages`,
+      });
+      errorEmitter.emit('permission-error', contextualError);
+      throw e; // re-throw to stop execution
+    });
 
     if (messagesSnapshot.empty) return;
-    
-    const batch = writeBatch(firestore);
-    messagesSnapshot.docs.forEach((doc) => {
-      batch.delete(doc.ref);
+
+    // Use non-blocking deletes for each message
+    messagesSnapshot.docs.forEach((messageDoc) => {
+      deleteDocumentNonBlocking(messageDoc.ref);
     });
-    await batch.commit();
   };
 
   const handleUnfriend = async (friendId: string) => {
@@ -101,19 +113,27 @@ export function ChatLayout() {
 
     const sortedIds = [user.uid, friendId].sort();
     const chatIdToDelete = sortedIds.join('-');
-    
-    // First, delete all messages in the subcollection
-    await handleClearChat(chatIdToDelete);
 
-    // Then, delete the chat document itself
+    // First, try to delete all messages in the subcollection
+    try {
+      await handleClearChat(chatIdToDelete);
+    } catch (e) {
+      // Error is already emitted by handleClearChat, so just log and exit
+      console.error('Could not clear chat during unfriend operation.', e);
+      return;
+    }
+
+
+    // Then, delete the chat document itself using a non-blocking call
     const chatDocRef = doc(firestore, 'chats', chatIdToDelete);
-    await deleteDoc(chatDocRef);
+    deleteDocumentNonBlocking(chatDocRef);
 
     // Finally, reset the UI
     if (selectedChatId === chatIdToDelete) {
       setSelectedChatId(null);
     }
   };
+
 
   const handleAddFriendAndStartChat = async (friend: User) => {
     if (!user || !firestore || user.uid === friend.id) return;
@@ -123,7 +143,7 @@ export function ChatLayout() {
 
     const chatDocRef = doc(firestore, 'chats', newChatId);
     const chatDoc = await getDoc(chatDocRef);
-    
+
     if (chatDoc.exists()) {
       setSelectedChatId(chatDoc.id);
     } else {
