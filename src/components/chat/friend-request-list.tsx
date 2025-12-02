@@ -6,7 +6,6 @@ import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Button } from '../ui/button';
 import { Check, X } from 'lucide-react';
 import { SidebarMenu, SidebarMenuItem } from '../ui/sidebar';
-import { playFriendRequestSound } from '@/lib/audio';
 
 
 interface FriendRequestListProps {
@@ -64,3 +63,5 @@ export function FriendRequestList({
   );
 }
 
+
+    

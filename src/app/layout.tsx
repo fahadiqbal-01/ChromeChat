@@ -10,7 +10,6 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 export const metadata: Metadata = {
   title: 'ChromeChat',
   description: 'A minimal and cool chat application.',
-  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
@@ -29,3 +28,5 @@ export default function RootLayout({
     </html>
   );
 }
+
+    

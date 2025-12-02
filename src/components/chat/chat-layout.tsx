@@ -39,7 +39,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { playFriendRequestSound, playMessageSentSound } from '@/lib/audio';
 
 
 export function ChatLayout() {
@@ -122,7 +121,6 @@ export function ChatLayout() {
     if (!selectedChatId || !user || !firestore) return;
     if (!selectedChat) return;
 
-    playMessageSentSound();
   
     const partnerId = selectedChat.participantIds.find((id) => id !== user.uid);
     if (!partnerId) return;
@@ -192,7 +190,6 @@ export function ChatLayout() {
   const handleAddFriend = async (friend: User) => {
     if (!user || !firestore) return;
     
-    playFriendRequestSound();
 
     const friendRequestRef = collection(firestore, `users/${friend.id}/friendRequests`);
     addDocumentNonBlocking(friendRequestRef, {
@@ -205,7 +202,6 @@ export function ChatLayout() {
  const handleAcceptRequest = async (request: FriendRequest) => {
     if (!user || !firestore) return;
 
-    playFriendRequestSound();
 
     const batch = writeBatch(firestore);
     const { requesterId, recipientId } = request;
@@ -339,5 +335,7 @@ export function ChatLayout() {
     </div>
   );
 }
+
+    
 
     
