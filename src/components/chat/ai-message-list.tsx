@@ -1,73 +1,155 @@
-'use client';
+/**
+ * Core Philosophy: This ruleset supports a real-time chat application by
+ * combining three distinct access patterns:
+ * 1. Publicly discoverable user profiles to enable search.
+ * 2. Strictly private, user-owned subcollections for personal data like friend requests.
+ * 3. Shared access for collaborative resources like chat rooms, secured via denormalization.
+ *
+ * Data Structure: The data is organized into two primary top-level collections,
+ * `/users` and `/chats`. The `/users/{userId}` documents contain user profile
+ * information and a private `/friendRequests` subcollection. The `/chats/{chatId}`
+ * documents contain chat metadata and a `/messages` subcollection.
+ *
+ * Key Security Decisions:
+ * - User Search: Any authenticated user can read documents in the top-level `/users`
+ *   collection to facilitate searching for other users. Writes are restricted to
+ *   the document owner.
+ * - Friend Requests: All friend requests are stored in a subcollection under the
+ *   *recipient's* user document, ensuring only they can read, accept, or reject them.
+ * - Chat Access: Access to `/chats` and their sub-collections is controlled by a
+ *   denormalized `participantIds` array on each `/chats/{chatId}` document. This avoids
+ *   costly `get` calls when securing access to chat messages and is highly performant.
+ * - List Operations: Listing all chats is disallowed to prevent data leakage.
+ *   Clients must have a pre-existing list of chat IDs (e.g., stored on a user
+ *   profile) to access chat documents.
+ *
+ * Denormalization for Authorization: The `participantIds` array (containing user UIDs) is
+ * denormalized onto each `/chats/{chatId}` document. This is the core mechanism
+ * that allows security rules for the `/messages` subcollection to efficiently verify
+ * a user's membership in the parent chat without extra reads on other collections.
+ *
+ * Structural Segregation: The use of separate top-level collections for `/users`
+ * (public-read) and `/chats` (shared access) creates clear and secure boundaries.
+ * User-specific data like `/friendRequests` is nested within a user's document
+ * to enforce a strict ownership model.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
 
-import { useEffect, useRef } from 'react';
-import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback } from '../ui/avatar';
-import type { AiMessage } from '@/ai/flows/types';
-import { Bot } from 'lucide-react';
-import { Skeleton } from '../ui/skeleton';
+    // --------------------------------
+    // Helper Functions
+    // --------------------------------
 
-interface AiMessageListProps {
-  messages: AiMessage[];
-  isLoading: boolean;
-}
-
-export function AiMessageList({ messages, isLoading }: AiMessageListProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    /**
+     * Returns true if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
     }
-  }, [messages, isLoading]);
 
-  return (
-    <div ref={scrollRef} className="flex-1 overflow-y-auto p-4">
-      <div className="flex flex-col gap-4">
-        {messages.map((message, index) => {
-          const isModel = message.role === 'model';
-          return (
-            <div
-              key={index}
-              className={cn('flex items-end gap-2', {
-                'justify-end': !isModel,
-                'justify-start': isModel,
-              })}
-            >
-              {isModel && (
-                <Avatar className="h-6 w-6">
-                    <AvatarFallback className='bg-primary text-primary-foreground'>
-                       <Bot size={16} />
-                    </AvatarFallback>
-                </Avatar>
-              )}
-              <div
-                className={cn(
-                  'max-w-xs rounded-lg px-3 py-2 md:max-w-md',
-                  {
-                    'bg-primary text-primary-foreground': !isModel,
-                    'bg-muted': isModel,
-                  }
-                )}
-              >
-                <p className="text-sm">{message.content}</p>
-              </div>
-            </div>
-          );
-        })}
-        {isLoading && (
-             <div className="flex items-end gap-2 justify-start">
-                <Avatar className="h-6 w-6">
-                    <AvatarFallback className='bg-primary text-primary-foreground'>
-                       <Bot size={16} />
-                    </AvatarFallback>
-                </Avatar>
-                <div className="bg-muted rounded-lg px-3 py-2">
-                    <Skeleton className="h-4 w-12" />
-                </div>
-            </div>
-        )}
-      </div>
-    </div>
-  );
+    /**
+     * Returns true if the authenticated user's UID matches the provided userId.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Returns true if the user is the owner and the document already exists.
+     * Used for safe update and delete operations.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * Returns true if the authenticated user is a member of the specified chat.
+     * This relies on a denormalized `participantIds` array on the chat document.
+     */
+    function isChatMember(chatId) {
+      let chat = get(/databases/$(database)/documents/chats/$(chatId));
+      return isSignedIn() && chat != null && request.auth.uid in chat.data.participantIds;
+    }
+
+    /**
+     * Returns true if the user is a member of the chat AND the sender of the message.
+     * This also implicitly checks that the chat and message documents exist.
+     */
+    function isExistingMessageOwner(chatId) {
+      return isChatMember(chatId) && resource != null && request.auth.uid == resource.data.senderId;
+    }
+
+    /**
+     * @description   Stores public user profiles.
+     * @path          /users/{userId}
+     * @allow         (create) A new user can create their own profile document.
+     *                (get/list) Any authenticated user can read profiles for search.
+     *                (update) A user can update their own profile.
+     * @deny          (create) A user cannot create a profile for someone else.
+     *                (update) A user cannot update another user's profile.
+     * @principle     Self-Creation and Ownership for a user's root document.
+     *                Public-read access for authenticated users to enable discovery.
+     */
+    match /users/{userId} {
+      allow get, list: if isSignedIn();
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+
+      /**
+       * @description   Stores incoming friend requests for a user.
+       * @path          /users/{userId}/friendRequests/{friendRequestId}
+       * @allow         (create) Any user can create a request in another user's subcollection.
+       *                (get/list/update/delete) The recipient user can manage their requests.
+       * @deny          (get) A user cannot read friend requests sent to someone else.
+       *                (update) A user cannot accept a request on behalf of someone else.
+       * @principle     Path-based ownership for reads/writes, but allows creation by others
+       *                while validating relational integrity.
+       */
+      match /friendRequests/{friendRequestId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isSignedIn() && request.resource.data.recipientId == userId && request.resource.data.requesterId == request.auth.uid;
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
+      }
+    }
+
+    /**
+     * @description   Stores chat room metadata, including the list of members.
+     * @path          /chats/{chatId}
+     * @allow         (create) An authenticated user can create a chat, adding themselves as a member.
+     *                (get) A member of the chat can read its metadata.
+     *                (list) A user can only list chats they are a member of.
+     *                (delete) A participant can delete the chat document.
+     * @deny          (list) A user cannot list all chats in the database if they are not a member.
+     *                (get) A non-member cannot read chat metadata.
+     * @principle     Shared Access (Closed Collaborators) using a denormalized `participantIds` list.
+     *                Disallows listing to prevent data leakage, unless filtered by participant.
+     */
+    match /chats/{chatId} {
+      allow get: if isChatMember(chatId);
+      allow list: if isSignedIn() && request.auth.uid in resource.data.participantIds;
+      allow create: if isSignedIn() && request.auth.uid in request.resource.data.participantIds;
+      allow update: if isChatMember(chatId) && resource != null;
+      allow delete: if isSignedIn() && resource != null && request.auth.uid in resource.data.participantIds;
+
+      /**
+       * @description   Stores the messages within a specific chat room.
+       * @path          /chats/{chatId}/messages/{messageId}
+       * @allow         (create) A chat member can send a message.
+       *                (get/list) Chat members can read all messages in the chat.
+       *                (update/delete) A user can modify or delete their own sent messages.
+       * @deny          (create) A non-member cannot send a message to the chat.
+       *                (update) A user cannot edit another user's message.
+       * @principle     Access is inherited from the parent document by checking its `members`
+       *                list, combined with document ownership for writes.
+       */
+      match /messages/{messageId} {
+        allow get, list: if isChatMember(chatId);
+        allow create: if isChatMember(chatId) && request.resource.data.senderId == request.auth.uid;
+        allow update, delete: if isExistingMessageOwner(chatId);
+      }
+    }
+  }
 }

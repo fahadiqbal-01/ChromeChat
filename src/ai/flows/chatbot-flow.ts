@@ -1,64 +1,155 @@
-'use server';
+/**
+ * Core Philosophy: This ruleset supports a real-time chat application by
+ * combining three distinct access patterns:
+ * 1. Publicly discoverable user profiles to enable search.
+ * 2. Strictly private, user-owned subcollections for personal data like friend requests.
+ * 3. Shared access for collaborative resources like chat rooms, secured via denormalization.
+ *
+ * Data Structure: The data is organized into two primary top-level collections,
+ * `/users` and `/chats`. The `/users/{userId}` documents contain user profile
+ * information and a private `/friendRequests` subcollection. The `/chats/{chatId}`
+ * documents contain chat metadata and a `/messages` subcollection.
+ *
+ * Key Security Decisions:
+ * - User Search: Any authenticated user can read documents in the top-level `/users`
+ *   collection to facilitate searching for other users. Writes are restricted to
+ *   the document owner.
+ * - Friend Requests: All friend requests are stored in a subcollection under the
+ *   *recipient's* user document, ensuring only they can read, accept, or reject them.
+ * - Chat Access: Access to `/chats` and their sub-collections is controlled by a
+ *   denormalized `participantIds` array on each `/chats/{chatId}` document. This avoids
+ *   costly `get` calls when securing access to chat messages and is highly performant.
+ * - List Operations: Listing all chats is disallowed to prevent data leakage.
+ *   Clients must have a pre-existing list of chat IDs (e.g., stored on a user
+ *   profile) to access chat documents.
+ *
+ * Denormalization for Authorization: The `participantIds` array (containing user UIDs) is
+ * denormalized onto each `/chats/{chatId}` document. This is the core mechanism
+ * that allows security rules for the `/messages` subcollection to efficiently verify
+ * a user's membership in the parent chat without extra reads on other collections.
+ *
+ * Structural Segregation: The use of separate top-level collections for `/users`
+ * (public-read) and `/chats` (shared access) creates clear and secure boundaries.
+ * User-specific data like `/friendRequests` is nested within a user's document
+ * to enforce a strict ownership model.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
 
-import {
-  ChatInputSchema,
-  ChatOutputSchema,
-  type ChatInput,
-  type ChatOutput,
-  AiMessage,
-} from './types';
-import { z } from 'zod';
+    // --------------------------------
+    // Helper Functions
+    // --------------------------------
 
-const ChatbotFlowInput = ChatInputSchema;
-type ChatbotFlowInput = z.infer<typeof ChatbotFlowInput>;
-
-const ChatbotFlowOutput = ChatOutputSchema;
-type ChatbotFlowOutput = z.infer<typeof ChatbotFlowOutput>;
-
-async function chatbotFlow(input: ChatbotFlowInput): Promise<ChatbotFlowOutput> {
-  const systemPrompt = `You are ChromeBot, a helpful and friendly AI assistant integrated into a chat application. Your responses should be concise, helpful, and conversational.`;
-
-  // The entire history, including the latest user message, is now in input.history
-  const messages: AiMessage[] = [
-    { role: 'system', content: systemPrompt },
-    ...input.history,
-  ];
-
-  try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'x-ai/grok-4.1-fast:free',
-        messages: messages.map((m) => ({ role: m.role, content: m.content })),
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`OpenRouter API error: ${response.status} ${response.statusText} - ${errorText}`);
-      throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
+    /**
+     * Returns true if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
     }
 
-    const completion = await response.json();
-    const message = completion.choices[0]?.message?.content;
-    
-    if (message) {
-        return message;
-    } else {
-        console.error('Invalid response structure from OpenRouter:', completion);
-        return "I'm sorry, I couldn't generate a response.";
+    /**
+     * Returns true if the authenticated user's UID matches the provided userId.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
 
-  } catch (error) {
-    console.error('Error fetching from OpenRouter:', error);
-    return "I'm sorry, there was an error processing your request.";
+    /**
+     * Returns true if the user is the owner and the document already exists.
+     * Used for safe update and delete operations.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * Returns true if the authenticated user is a member of the specified chat.
+     * This relies on a denormalized `participantIds` array on the chat document.
+     */
+    function isChatMember(chatId) {
+      let chat = get(/databases/$(database)/documents/chats/$(chatId));
+      return isSignedIn() && chat != null && request.auth.uid in chat.data.participantIds;
+    }
+
+    /**
+     * Returns true if the user is a member of the chat AND the sender of the message.
+     * This also implicitly checks that the chat and message documents exist.
+     */
+    function isExistingMessageOwner(chatId) {
+      return isChatMember(chatId) && resource != null && request.auth.uid == resource.data.senderId;
+    }
+
+    /**
+     * @description   Stores public user profiles.
+     * @path          /users/{userId}
+     * @allow         (create) A new user can create their own profile document.
+     *                (get/list) Any authenticated user can read profiles for search.
+     *                (update) A user can update their own profile.
+     * @deny          (create) A user cannot create a profile for someone else.
+     *                (update) A user cannot update another user's profile.
+     * @principle     Self-Creation and Ownership for a user's root document.
+     *                Public-read access for authenticated users to enable discovery.
+     */
+    match /users/{userId} {
+      allow get, list: if isSignedIn();
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+
+      /**
+       * @description   Stores incoming friend requests for a user.
+       * @path          /users/{userId}/friendRequests/{friendRequestId}
+       * @allow         (create) Any user can create a request in another user's subcollection.
+       *                (get/list/update/delete) The recipient user can manage their requests.
+       * @deny          (get) A user cannot read friend requests sent to someone else.
+       *                (update) A user cannot accept a request on behalf of someone else.
+       * @principle     Path-based ownership for reads/writes, but allows creation by others
+       *                while validating relational integrity.
+       */
+      match /friendRequests/{friendRequestId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isSignedIn() && request.resource.data.recipientId == userId && request.resource.data.requesterId == request.auth.uid;
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
+      }
+    }
+
+    /**
+     * @description   Stores chat room metadata, including the list of members.
+     * @path          /chats/{chatId}
+     * @allow         (create) An authenticated user can create a chat, adding themselves as a member.
+     *                (get) A member of the chat can read its metadata.
+     *                (list) A user can only list chats they are a member of.
+     *                (delete) A participant can delete the chat document.
+     * @deny          (list) A user cannot list all chats in the database if they are not a member.
+     *                (get) A non-member cannot read chat metadata.
+     * @principle     Shared Access (Closed Collaborators) using a denormalized `participantIds` list.
+     *                Disallows listing to prevent data leakage, unless filtered by participant.
+     */
+    match /chats/{chatId} {
+      allow get: if isChatMember(chatId);
+      allow list: if isSignedIn() && request.auth.uid in resource.data.participantIds;
+      allow create: if isSignedIn() && request.auth.uid in request.resource.data.participantIds;
+      allow update: if isChatMember(chatId) && resource != null;
+      allow delete: if isSignedIn() && resource != null && request.auth.uid in resource.data.participantIds;
+
+      /**
+       * @description   Stores the messages within a specific chat room.
+       * @path          /chats/{chatId}/messages/{messageId}
+       * @allow         (create) A chat member can send a message.
+       *                (get/list) Chat members can read all messages in the chat.
+       *                (update/delete) A user can modify or delete their own sent messages.
+       * @deny          (create) A non-member cannot send a message to the chat.
+       *                (update) A user cannot edit another user's message.
+       * @principle     Access is inherited from the parent document by checking its `members`
+       *                list, combined with document ownership for writes.
+       */
+      match /messages/{messageId} {
+        allow get, list: if isChatMember(chatId);
+        allow create: if isChatMember(chatId) && request.resource.data.senderId == request.auth.uid;
+        allow update, delete: if isExistingMessageOwner(chatId);
+      }
+    }
   }
-}
-
-export async function chatWithChromeBot(input: ChatInput): Promise<ChatOutput> {
-  return chatbotFlow(input);
 }
