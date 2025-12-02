@@ -62,7 +62,14 @@ export function ChatView({
 
 
   if (!partner) {
-     return <div className="flex h-full flex-col items-center justify-center gap-4 bg-background"><p>User not found.</p></div>
+     return (
+      <div className="flex h-full flex-col items-center justify-center gap-4 bg-background">
+        <div className="absolute left-4 top-4">
+          <SidebarTrigger />
+        </div>
+        <p>This user no longer exists.</p>
+      </div>
+     )
   }
 
   return (

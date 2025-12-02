@@ -53,11 +53,6 @@ export function AppSidebar({
   const [searchTerm, setSearchTerm] = React.useState('');
   const { toast } = useToast();
   
-  const getChatPartner = (chat: Chat) => {
-    const partnerId = chat.participantIds.find(id => id !== user.id);
-    return allUsers.find(u => u.id === partnerId);
-  };
-
   const chatsWithPartners = React.useMemo(() => {
     if (!chats || !allUsers) return [];
     return chats.map(chat => {
@@ -93,14 +88,6 @@ export function AppSidebar({
     if(isMobile) {
         setOpenMobile(false);
     }
-  }
-
-  const handleSelectDeletedUser = () => {
-    toast({
-      variant: 'destructive',
-      title: 'Account Deleted',
-      description: "This user has deleted their account and can no longer receive messages.",
-    });
   }
 
   return (
@@ -156,36 +143,29 @@ export function AppSidebar({
         <SidebarGroup>
            <p className="px-2 text-xs font-semibold text-muted-foreground mb-2">Friends</p>
           <SidebarMenu>
-            {chatsWithPartners.map((chat) => {
-              const friend = chat.partner;
+            {chatsWithPartners.filter(chat => chat.partner).map((chat) => {
+              const friend = chat.partner!;
               const unreadCount = chat.unreadCount?.[user.id] || 0;
-              
-              const friendName = friend ? friend.username : 'Deleted User';
-              const friendInitial = friend ? friend.username.charAt(0).toUpperCase() : 'D';
-              const isFriendActive = friend ? friend.isActive : false;
 
               return (
                 <SidebarMenuItem key={chat.id}>
                   <SidebarMenuButton
-                    onClick={() => friend ? handleSelectChat(chat.id) : handleSelectDeletedUser()}
-                    isActive={selectedChatId === chat.id && !!friend}
-                    className={cn(
-                      'justify-start w-full relative',
-                      !friend && 'opacity-50 cursor-not-allowed'
-                    )}
+                    onClick={() => handleSelectChat(chat.id)}
+                    isActive={selectedChatId === chat.id}
+                    className="justify-start w-full relative"
                   >
                     <div className="relative">
                       <Avatar className="h-6 w-6">
                         <AvatarFallback className="text-xs">
-                          {friendInitial}
+                          {friend.username.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      {isFriendActive && (
+                      {friend.isActive && (
                         <div className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-green-500 border-2 border-sidebar-background"></div>
                       )}
                     </div>
-                    <span className="truncate">{friendName}</span>
-                    {unreadCount > 0 && friend && (
+                    <span className="truncate">{friend.username}</span>
+                    {unreadCount > 0 && (
                       <Badge className="absolute right-2 h-5 w-5 justify-center p-0">{unreadCount}</Badge>
                     )}
                   </SidebarMenuButton>
