@@ -24,7 +24,6 @@ export function FriendRequestList({
 }: FriendRequestListProps) {
 
   const handleAccept = (request: FriendRequest) => {
-    playFriendRequestSound();
     onAccept(request);
   }
 
