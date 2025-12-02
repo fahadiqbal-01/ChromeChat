@@ -7,6 +7,7 @@ export const MessageSchema = z.object({
 
 export const ChatInputSchema = z.object({
   history: z.array(MessageSchema),
+  prompt: z.string(),
 });
 export type ChatInput = z.infer<typeof ChatInputSchema>;
 

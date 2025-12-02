@@ -111,7 +111,8 @@ export function ChatLayout() {
       setIsBotTyping(true);
 
       const chatInput: ChatInput = {
-        history: newHistory.map(m => ({role: m.role, content: m.content}))
+        history: aiChatHistory.map(m => ({role: m.role, content: m.content})),
+        prompt: text,
       };
 
       try {
