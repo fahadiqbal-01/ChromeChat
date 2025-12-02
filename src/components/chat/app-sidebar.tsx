@@ -100,11 +100,6 @@ export function AppSidebar({
   return (
     <Sidebar>
       <SidebarHeader>
-        <div className="p-2 pt-4">
-            <Button variant="ghost" onClick={onLogoClick} className="w-full justify-start p-0 h-auto hover:bg-transparent">
-                <Logo />
-            </Button>
-        </div>
         <div
           className={`flex items-center gap-3 p-2 transition-all ${
             state === 'collapsed' ? 'justify-center' : ''
