@@ -27,21 +27,21 @@ export function FriendRequestList({
 
         return (
           <SidebarMenuItem key={request.id}>
-            <div className="flex w-full items-center justify-between p-2 text-sm">
+            <div className="flex w-full items-center justify-between p-2 text-base md:text-sm">
                 <div className="flex items-center gap-2">
-                    <Avatar className="h-6 w-6">
-                        <AvatarFallback className="text-xs">
+                    <Avatar className="h-8 w-8 md:h-6 md:w-6">
+                        <AvatarFallback className="text-sm md:text-xs">
                         {requester.username.charAt(0).toUpperCase()}
                         </AvatarFallback>
                     </Avatar>
                     <span className="truncate">{requester.username}</span>
                 </div>
                 <div className="flex gap-1">
-                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onAccept(request)}>
-                        <Check className="h-4 w-4 text-green-500"/>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 md:h-7 md:w-7" onClick={() => onAccept(request)}>
+                        <Check className="h-5 w-5 md:h-4 md:w-4 text-green-500"/>
                     </Button>
-                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onReject(request)}>
-                        <X className="h-4 w-4 text-red-500"/>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 md:h-7 md:w-7" onClick={() => onReject(request)}>
+                        <X className="h-5 w-5 md:h-4 md:w-4 text-red-500"/>
                     </Button>
                 </div>
             </div>

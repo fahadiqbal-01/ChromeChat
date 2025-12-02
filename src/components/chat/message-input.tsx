@@ -59,7 +59,7 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
             )}
           />
           <Button type="submit" size="icon" disabled={form.formState.isSubmitting || !form.formState.isValid}>
-            <SendHorizontal className="h-5 w-5" />
+            <SendHorizontal className="h-6 w-6 md:h-5 md:w-5" />
             <span className="sr-only">Send Message</span>
           </Button>
         </form>
