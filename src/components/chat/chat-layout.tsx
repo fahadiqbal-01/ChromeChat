@@ -184,13 +184,11 @@ export function ChatLayout() {
     const requestDocRef = doc(firestore, 'users', recipientId, 'friendRequests', request.id);
     batch.delete(requestDocRef);
 
-    try {
-      await batch.commit();
-      setSelectedChatId(newChatId);
-    } catch (error) {
-      console.error("Failed to accept friend request:", error);
-      // Since a batch can fail on multiple documents, we create a generic
-      // error that points to the most likely permission issues.
+    batch.commit()
+      .then(() => {
+        setSelectedChatId(newChatId);
+      })
+      .catch((error) => {
         const permissionError = new FirestorePermissionError({
           // We provide a generalized path because a batch can fail on any of its operations
           path: `users/${user.uid} or chats/${newChatId}`, 
@@ -204,7 +202,7 @@ export function ChatLayout() {
           }
         });
       errorEmitter.emit('permission-error', permissionError);
-    }
+    });
   };
   
   const handleRejectRequest = async (request: FriendRequest) => {
