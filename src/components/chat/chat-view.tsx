@@ -11,7 +11,7 @@ import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, orderBy, query } from 'firebase/firestore';
 
 interface ChatViewProps {
-  currentUser: AuthUser;
+  currentUser: User;
   chat: Chat | null;
   onSendMessage: (text: string) => void;
   onClearChat: (chatId: string) => void;
@@ -50,7 +50,7 @@ export function ChatView({ currentUser, chat, onSendMessage, onClearChat, onUnfr
     );
   }
 
-  const partnerId = chat.participantIds.find(id => id !== currentUser.uid);
+  const partnerId = chat.participantIds.find(id => id !== currentUser.id);
   const partner = allUsers.find(u => u.id === partnerId);
 
   if (!partner) {
@@ -64,7 +64,7 @@ export function ChatView({ currentUser, chat, onSendMessage, onClearChat, onUnfr
         onClearChat={() => onClearChat(chat.id)}
         onUnfriend={() => onUnfriend(partner.id)}
       />
-      <MessageList messages={messages || []} currentUserId={currentUser.uid} />
+      <MessageList messages={messages || []} currentUserId={currentUser.id} />
       <MessageInput onSendMessage={onSendMessage} />
     </div>
   );

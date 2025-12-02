@@ -10,6 +10,8 @@ import {
   orderBy,
   getDocs,
   limit,
+  writeBatch,
+  deleteDoc,
 } from 'firebase/firestore';
 import {
   SidebarProvider,
@@ -75,10 +77,12 @@ export function ChatLayout() {
      if (!firestore) return;
     const messagesQuery = query(collection(firestore, 'chats', chatId, 'messages'));
     const messagesSnapshot = await getDocs(messagesQuery);
-    // This is a placeholder for a more robust batch delete
+    
+    const batch = writeBatch(firestore);
     messagesSnapshot.docs.forEach(doc => {
-       console.log('Would delete message:', doc.id);
+       batch.delete(doc.ref);
     });
+    await batch.commit();
 
     if (selectedChatId === chatId) {
         // Visually clear messages, though they are not yet deleted
@@ -87,16 +91,20 @@ export function ChatLayout() {
 
   const handleUnfriend = async (friendId: string) => {
      if (!user || !firestore) return;
+     
+     const sortedIds = [user.uid, friendId].sort();
+
      const chatToRemoveQuery = query(
          collection(firestore, 'chats'),
-         where('participantIds', '==', [user.uid, friendId].sort())
+         where('participantIds', '==', sortedIds),
+         limit(1)
      );
      const chatSnapshot = await getDocs(chatToRemoveQuery);
      if (!chatSnapshot.empty) {
-        const chatId = chatSnapshot.docs[0].id;
-        // Placeholder for deleting chat document
-        console.log('Would delete chat:', chatId);
-        if (selectedChatId === chatId) {
+        const docToDelete = chatSnapshot.docs[0];
+        await deleteDoc(docToDelete.ref);
+        
+        if (selectedChatId === docToDelete.id) {
             setSelectedChatId(null);
         }
      }
@@ -129,11 +137,13 @@ export function ChatLayout() {
 
   if (!user || !allUsers) return null;
 
+  const currentUser = {id: user.uid, email: user.email!, username: user.displayName || 'User'};
+
   return (
     <SidebarProvider defaultOpen>
       <div className="flex h-screen w-full">
         <AppSidebar
-          user={{id: user.uid, email: user.email!, username: user.displayName || 'User'}}
+          user={currentUser}
           chats={chats || []}
           allUsers={allUsers || []}
           onSelectChat={handleSelectChat}
@@ -143,7 +153,7 @@ export function ChatLayout() {
         />
         <SidebarInset className="flex-1 flex flex-col">
           <ChatView
-            currentUser={user}
+            currentUser={currentUser}
             chat={selectedChat}
             onSendMessage={handleSendMessage}
             onClearChat={handleClearChat}

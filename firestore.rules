@@ -120,15 +120,16 @@ service cloud.firestore {
      * @path          /chats/{chatId}
      * @allow         (create) An authenticated user can create a chat, adding themselves as a member.
      *                (get) A member of the chat can read its metadata.
-     * @deny          (list) A user cannot list all chats in the database.
+     *                (list) A user can only list chats they are a member of.
+     * @deny          (list) A user cannot list all chats in the database if they are not a member.
      *                (get) A non-member cannot read chat metadata.
      * @principle     Shared Access (Closed Collaborators) using a denormalized `members` list.
-     *                Disallows listing to prevent data leakage.
+     *                Disallows listing to prevent data leakage, unless filtered by participant.
      */
     match /chats/{chatId} {
       allow get: if isChatMember(chatId);
-      allow list: if false; // Deny listing all chats for security. Client must know chat IDs.
-      allow create: if isSignedIn() && request.auth.uid in request.resource.data.members;
+      allow list: if isSignedIn() && request.auth.uid in query.filters.participantIds;
+      allow create: if isSignedIn() && request.auth.uid in request.resource.data.participantIds;
       allow update: if isChatMember(chatId) && resource != null;
       allow delete: if isChatMember(chatId) && resource != null;
 
