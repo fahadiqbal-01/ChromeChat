@@ -7,5 +7,5 @@ export const ai = genkit({
   ],
   // The model to use.
   // See https://developers.generativeai.google/models/gemini
-  model: 'gemini-1.5-flash',
+  model: 'googleai/gemini-1.5-flash',
 });
