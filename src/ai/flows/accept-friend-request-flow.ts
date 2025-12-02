@@ -5,26 +5,14 @@
  * the necessary Firestore writes atomically.
  */
 import { ai } from '@/ai/genkit';
-import { z } from 'zod';
 import { admin } from '@/firebase/admin';
-import {FieldValue} from 'firebase-admin/firestore';
-
-export const AcceptFriendRequestInputSchema = z.object({
-  requesterId: z.string().describe('The ID of the user who sent the request.'),
-  recipientId: z.string().describe('The ID of the user who is accepting the request.'),
-  friendRequestId: z.string().describe('The ID of the friend request document.'),
-});
-export type AcceptFriendRequestInput = z.infer<
-  typeof AcceptFriendRequestInputSchema
->;
-
-export const AcceptFriendRequestOutputSchema = z.object({
-  success: z.boolean().describe('Whether the operation was successful.'),
-  chatId: z.string().optional().describe('The ID of the newly created chat.'),
-});
-export type AcceptFriendRequestOutput = z.infer<
-  typeof AcceptFriendRequestOutputSchema
->;
+import { FieldValue } from 'firebase-admin/firestore';
+import {
+  AcceptFriendRequestInputSchema,
+  AcceptFriendRequestOutputSchema,
+  type AcceptFriendRequestInput,
+  type AcceptFriendRequestOutput,
+} from './types';
 
 export async function acceptFriendRequest(
   input: AcceptFriendRequestInput
