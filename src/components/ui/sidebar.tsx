@@ -3,14 +3,14 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
-import { PanelLeftOpen } from "lucide-react"
+import { PanelLeftOpen, X } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Tooltip,
@@ -206,6 +206,7 @@ const Sidebar = React.forwardRef<
             }
             side={side}
           >
+            <SheetTitle className="sr-only">Sidebar</SheetTitle>
             <div className="flex h-full w-full flex-col">{children}</div>
           </SheetContent>
         </Sheet>
@@ -261,12 +262,13 @@ Sidebar.displayName = "Sidebar"
 
 const SidebarTrigger = React.forwardRef<
   React.ElementRef<typeof Button>,
-  React.ComponentProps<typeof Button>
->(({ className, onClick, ...props }, ref) => {
+  React.ComponentProps<typeof Button> & { asChild?: boolean }
+>(({ className, onClick, asChild, ...props }, ref) => {
   const { toggleSidebar } = useSidebar()
+  const Comp = asChild ? Slot : Button
 
   return (
-    <Button
+    <Comp
       ref={ref}
       data-sidebar="trigger"
       variant="ghost"
@@ -280,7 +282,7 @@ const SidebarTrigger = React.forwardRef<
     >
       <PanelLeftOpen />
       <span className="sr-only">Toggle Sidebar</span>
-    </Button>
+    </Comp>
   )
 })
 SidebarTrigger.displayName = "SidebarTrigger"

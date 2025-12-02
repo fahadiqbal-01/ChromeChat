@@ -13,9 +13,10 @@ import {
   SidebarGroup,
   SidebarInput,
   useSidebar,
+  SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { LogOut, Search, User as UserIcon } from 'lucide-react';
+import { LogOut, Search, User as UserIcon, X } from 'lucide-react';
 import type { User, Chat, FriendRequest } from '@/lib/types';
 import {
   Avatar,
@@ -54,7 +55,7 @@ export function AppSidebar({
   onAcceptRequest,
   onRejectRequest,
 }: AppSidebarProps) {
-  const { state, setOpenMobile, isMobile } = useSidebar();
+  const { state, setOpenMobile, isMobile, toggleSidebar } = useSidebar();
   const [searchTerm, setSearchTerm] = React.useState('');
   const { toast } = useToast();
   
@@ -105,8 +106,11 @@ export function AppSidebar({
         >
           <UserIcon className="h-10 w-10 md:h-8 md:w-8 rounded-full bg-muted p-1.5" />
           {state === 'expanded' && (
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-hidden flex justify-between items-center">
               <p className="truncate font-semibold text-base md:text-sm">{user.username}</p>
+                <Button variant="ghost" size="icon" onClick={toggleSidebar} className="md:hidden">
+                    <X className="h-6 w-6" />
+                </Button>
             </div>
           )}
         </div>
