@@ -152,21 +152,24 @@ export function ChatLayout() {
     setAiLoading(true);
     const newUserMessage: AiMessage = { role: 'user', content: prompt };
     
-    const aiMessagesCollection = collection(firestore, 'users', user.uid, 'ai-chat-messages');
-    await addDoc(aiMessagesCollection, { ...newUserMessage, timestamp: serverTimestamp() });
-
+    // The history from the hook, which is definitely available.
     const currentHistory = aiChatHistory || [];
     
-    // Create a plain history array for the server function
-    const plainHistory = [...currentHistory, newUserMessage].map(msg => ({
+    // Immediately construct the full history for the API call.
+    // This includes the old history AND the new user message.
+    const historyForApi = [...currentHistory, newUserMessage].map(msg => ({
       role: msg.role,
       content: msg.content,
     }));
 
+    // Add the user's message to Firestore *after* preparing the API call payload
+    const aiMessagesCollection = collection(firestore, 'users', user.uid, 'ai-chat-messages');
+    await addDoc(aiMessagesCollection, { ...newUserMessage, timestamp: serverTimestamp() });
 
     try {
+      // Send the complete, correct history to the AI.
       const response = await chatWithChromeBot({
-        history: plainHistory,
+        history: historyForApi,
       });
   
       const botMessage: AiMessage = { role: 'model', content: response };
