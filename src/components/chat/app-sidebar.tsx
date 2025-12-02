@@ -32,6 +32,7 @@ interface AppSidebarProps {
   chats: Chat[];
   allUsers: User[];
   onSelectChat: (chatId: string) => void;
+  onSelectDeletedUser: () => void;
   onLogout: () => void;
   selectedChatId?: string | null;
   onAddFriend: (friend: User) => void;
@@ -43,6 +44,7 @@ export function AppSidebar({
   chats,
   allUsers,
   onSelectChat,
+  onSelectDeletedUser,
   onLogout,
   selectedChatId,
   onAddFriend,
@@ -56,17 +58,18 @@ export function AppSidebar({
     return allUsers.find(u => u.id === partnerId);
   };
 
-  const validChats = React.useMemo(() => {
+  const chatsWithPartners = React.useMemo(() => {
     if (!chats || !allUsers) return [];
-    return chats.filter(chat => getChatPartner(chat));
+    return chats.map(chat => ({
+      ...chat,
+      partner: getChatPartner(chat)
+    }));
   }, [chats, allUsers, user.id]);
 
   const friends = React.useMemo(() => {
-    if (!user || !validChats) return [];
-    const friendIds = validChats.flatMap(c => c.participantIds).filter(id => id !== user.id);
-    const uniqueFriendIds = [...new Set(friendIds)];
-    return allUsers.filter(u => uniqueFriendIds.includes(u.id));
-  }, [user, validChats, allUsers]);
+    if (!user || !chatsWithPartners) return [];
+    return chatsWithPartners.map(c => c.partner).filter((p): p is User => !!p);
+  }, [user, chatsWithPartners]);
 
   const searchResults = searchTerm.length > 0
   ? allUsers.filter(u => 
@@ -141,10 +144,26 @@ export function AppSidebar({
         <SidebarGroup>
            <p className="px-2 text-xs font-semibold text-muted-foreground mb-2">Friends</p>
           <SidebarMenu>
-            {validChats.map((chat) => {
-              const friend = getChatPartner(chat);
-              if (!friend) return null;
+            {chatsWithPartners.map((chat) => {
+              const friend = chat.partner;
               const unreadCount = chat.unreadCount?.[user.id] || 0;
+              
+              if (!friend) {
+                return (
+                  <SidebarMenuItem key={chat.id}>
+                    <SidebarMenuButton
+                      onClick={onSelectDeletedUser}
+                      className="justify-start w-full relative opacity-50 cursor-not-allowed"
+                    >
+                      <Avatar className="h-6 w-6">
+                        <AvatarFallback>?</AvatarFallback>
+                      </Avatar>
+                      <span className="truncate">Deleted User</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              }
+
               return (
                 <SidebarMenuItem key={chat.id}>
                   <SidebarMenuButton

@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -28,11 +29,13 @@ import {
 } from '@/firebase';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { usePresence } from '@/hooks/use-presence';
+import { useToast } from '@/hooks/use-toast';
 
 export function ChatLayout() {
   const { user } = useUser();
   const { logout } = useAuth();
   const firestore = useFirestore();
+  const { toast } = useToast();
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const { setOpenMobile, isMobile } = useSidebar();
   
@@ -86,6 +89,14 @@ export function ChatLayout() {
       }
     }
   };
+
+  const handleSelectDeletedUser = () => {
+    toast({
+      variant: 'destructive',
+      title: 'Account Deleted',
+      description: "This user has deleted their account and can no longer receive messages.",
+    });
+  }
 
 
   const handleSendMessage = async (text: string) => {
@@ -186,6 +197,7 @@ export function ChatLayout() {
         chats={chats || []}
         allUsers={allUsers || []}
         onSelectChat={handleSelectChat}
+        onSelectDeletedUser={handleSelectDeletedUser}
         onLogout={logout}
         selectedChatId={selectedChatId}
         onAddFriend={handleAddFriendAndStartChat}
