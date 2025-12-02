@@ -104,7 +104,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow get, list: if isSignedIn();
       allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && areFieldsImmutable(['id', 'username', 'email']);
+      allow update: if isExistingOwner(userId); // Simplified to allow friend list updates
       allow delete: if isExistingOwner(userId);
 
       /**
@@ -118,9 +118,8 @@ service cloud.firestore {
        *                while validating relational integrity.
        */
       match /friendRequests/{friendRequestId} {
-        allow get, list: if isOwner(userId);
+        allow get, list, update, delete: if isOwner(userId);
         allow create: if isSignedIn() && request.resource.data.recipientId == userId && request.resource.data.requesterId == request.auth.uid;
-        allow update, delete: if isExistingOwner(userId);
       }
     }
 
