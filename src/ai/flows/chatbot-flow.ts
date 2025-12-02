@@ -19,7 +19,9 @@ async function chatbotFlow(input: ChatbotFlowInput): Promise<ChatbotFlowOutput> 
   const systemPrompt = `You are ChromeBot, a helpful and friendly AI assistant integrated into a chat application. Your responses should be concise, helpful, and conversational.`;
 
   const messages: AiMessage[] = [
-    { role: 'system', content: systemPrompt },
+    // OpenRouter doesn't handle system prompts in the same way as OpenAI. 
+    // We can prepend it to the user's first message or include it as a user/assistant message pair.
+    // For simplicity, we will just use the history and the new prompt.
     ...input.history,
     { role: 'user', content: input.prompt },
   ];
@@ -32,14 +34,15 @@ async function chatbotFlow(input: ChatbotFlowInput): Promise<ChatbotFlowOutput> 
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'openai/gpt-4o',
+        model: 'x-ai/grok-4.1-fast:free', // Use the correct model ID
         messages: messages.map((m) => ({ role: m.role, content: m.content })),
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`OpenRouter API error: ${response.status} ${response.statusText} - ${errorText}`);
+      console.error(`OpenRouter API error: ${response.status} ${response.statusText} - ${errorText}`);
+      throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
     }
 
     const completion = await response.json();
