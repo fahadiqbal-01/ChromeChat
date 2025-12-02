@@ -83,7 +83,9 @@ export function AppSidebar({
   return (
     <Sidebar>
       <SidebarHeader>
-        <Logo />
+        <div className="p-2">
+          <Logo />
+        </div>
         <div
           className={`flex items-center gap-3 p-2 transition-all ${
             state === 'collapsed' ? 'justify-center' : ''
