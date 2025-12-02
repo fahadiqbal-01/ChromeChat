@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/use-auth';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 
 interface AppSidebarProps {
@@ -145,11 +146,16 @@ export function AppSidebar({
                     isActive={selectedChatId === chat.id}
                     className="justify-start w-full relative"
                   >
-                    <Avatar className="h-6 w-6">
-                      <AvatarFallback className="text-xs">
-                        {friend.username.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
+                    <div className="relative">
+                      <Avatar className="h-6 w-6">
+                        <AvatarFallback className="text-xs">
+                          {friend.username.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      {friend.isActive && (
+                        <div className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-green-500 border-2 border-sidebar-background"></div>
+                      )}
+                    </div>
                     <span className="truncate">{friend.username}</span>
                     {unreadCount > 0 && (
                       <Badge className="absolute right-2 h-5 w-5 justify-center p-0">{unreadCount}</Badge>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   collection,
   query,
@@ -27,6 +27,7 @@ import {
   useUser,
 } from '@/firebase';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { usePresence } from '@/hooks/use-presence';
 
 export function ChatLayout() {
   const { user } = useUser();
@@ -34,6 +35,8 @@ export function ChatLayout() {
   const firestore = useFirestore();
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const { setOpenMobile, isMobile } = useSidebar();
+  
+  usePresence(user?.uid);
 
   const handleLogoClick = () => {
     setSelectedChatId(null);

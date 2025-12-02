@@ -85,7 +85,7 @@ service cloud.firestore {
      * @path          /users/{userId}
      * @allow         (create) A new user can create their own profile document.
      *                (get/list) Any authenticated user can read profiles for search.
-     *                (update) A user can update their own profile.
+     *                (update) A user can update their own profile, including presence status.
      * @deny          (create) A user cannot create a profile for someone else.
      *                (update) A user cannot update another user's profile.
      * @principle     Self-Creation and Ownership for a user's root document.
@@ -94,7 +94,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow get, list: if isSignedIn();
       allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
 
       /**
