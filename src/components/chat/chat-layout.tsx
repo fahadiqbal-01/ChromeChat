@@ -5,12 +5,11 @@ import {
   collection,
   query,
   where,
-  addDoc,
   serverTimestamp,
   getDocs,
   doc,
-  setDoc,
   getDoc,
+  setDoc,
 } from 'firebase/firestore';
 import { SidebarInset, useSidebar } from '@/components/ui/sidebar';
 import { AppSidebar } from './app-sidebar';
@@ -26,6 +25,7 @@ import {
   deleteDocumentNonBlocking,
   FirestorePermissionError,
   errorEmitter,
+  setDocumentNonBlocking,
 } from '@/firebase';
 
 export function ChatLayout() {
@@ -143,15 +143,23 @@ export function ChatLayout() {
     const newChatId = sortedIds.join('-');
 
     const chatDocRef = doc(firestore, 'chats', newChatId);
-    const chatDoc = await getDoc(chatDocRef);
+    const chatDoc = await getDoc(chatDocRef).catch((e) => {
+       const contextualError = new FirestorePermissionError({
+        operation: 'get',
+        path: `chats/${newChatId}`,
+      });
+      errorEmitter.emit('permission-error', contextualError);
+      throw e;
+    });
 
     if (chatDoc.exists()) {
       setSelectedChatId(chatDoc.id);
     } else {
-      await setDoc(chatDocRef, {
+      const newChatData = {
         participantIds: sortedIds,
         createdAt: serverTimestamp(),
-      });
+      };
+      setDocumentNonBlocking(chatDocRef, newChatData, {});
       setSelectedChatId(newChatId);
     }
     setOpenMobile(false);
