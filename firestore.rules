@@ -140,8 +140,7 @@ service cloud.firestore {
        * @allow         (create) A chat member can send a message.
        *                (get/list) Chat members can read all messages in the chat.
        *                (update) A user can modify their own sent messages.
-       *                (delete) A chat member can delete any message in the chat (for unfriend/clear chat)
-       *                         or a user can delete their own message.
+       *                (delete) A user can delete their own sent messages.
        * @deny          (create) A non-member cannot send a message to the chat.
        *                (update) A user cannot edit another user's message.
        * @principle     Access is inherited from the parent document by checking its `members`
@@ -151,7 +150,7 @@ service cloud.firestore {
         allow get, list: if isChatMember(chatId);
         allow create: if isChatMember(chatId) && request.resource.data.senderId == request.auth.uid;
         allow update: if isExistingMessageOwner(chatId);
-        allow delete: if isChatMember(chatId);
+        allow delete: if isExistingMessageOwner(chatId);
       }
     }
   }

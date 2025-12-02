@@ -78,7 +78,7 @@ export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) 
  */
 export function deleteDocumentNonBlocking(docRef: DocumentReference) {
   fbDeleteDoc(docRef)
-    .catch(() => { // Removed 'error' param as it's not used
+    .catch(error => { // Removed 'error' param as it's not used
       errorEmitter.emit(
         'permission-error',
         new FirestorePermissionError({

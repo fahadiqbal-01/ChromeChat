@@ -143,12 +143,9 @@ export function ChatLayout() {
     // Clear chat messages first
     await handleClearChat(chatIdToDelete);
   
-    // Then delete the chat document using the non-blocking method
+    // Then delete the chat document
     const chatDocRef = doc(firestore, 'chats', chatIdToDelete);
-    deleteDocumentNonBlocking(chatDocRef);
-  
-    // Optimistically update the UI
-    setChats((prevChats) => (prevChats || []).filter((chat) => chat.id !== chatIdToDelete));
+    await deleteDoc(chatDocRef);
   
     if (selectedChatId === chatIdToDelete) {
       setSelectedChatId(null);
