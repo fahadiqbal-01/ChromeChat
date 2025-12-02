@@ -15,12 +15,13 @@ import {
   increment,
   updateDoc,
   deleteDoc,
+  arrayUnion,
 } from 'firebase/firestore';
 import { SidebarInset, useSidebar } from '@/components/ui/sidebar';
 import { AppSidebar } from './app-sidebar';
 import { ChatView } from './chat-view';
 import { useAuth } from '@/hooks/use-auth';
-import type { Chat, User } from '@/lib/types';
+import type { Chat, User, FriendRequest } from '@/lib/types';
 import {
   useCollection,
   useMemoFirebase,
@@ -60,9 +61,21 @@ export function ChatLayout() {
         : null,
     [firestore, user]
   );
+  
+  const friendRequestsQuery = useMemoFirebase(
+    () =>
+      firestore && user
+        ? query(
+            collection(firestore, 'users', user.uid, 'friendRequests'),
+            where('status', '==', 'pending')
+          )
+        : null,
+    [firestore, user]
+  );
 
   const { data: allUsers } = useCollection<User>(usersQuery);
   const { data: chats } = useCollection<Chat>(chatsQuery);
+  const { data: friendRequests } = useCollection<FriendRequest>(friendRequestsQuery);
 
   const selectedChat = useMemo(() => {
     if (!selectedChatId) return null;
@@ -78,7 +91,6 @@ export function ChatLayout() {
     if (user && firestore) {
       const chatDocRef = doc(firestore, 'chats', chatId);
       const unreadCountKey = `unreadCount.${user.uid}`;
-      // Use non-blocking update to correctly handle permission errors
       updateDocumentNonBlocking(chatDocRef, {
         [unreadCountKey]: 0,
       });
@@ -132,38 +144,53 @@ export function ChatLayout() {
     await batch.commit();
   };
 
-  const handleAddFriendAndStartChat = async (friend: User) => {
-    if (!user || !firestore || user.uid === friend.id) return;
+  const handleAddFriend = async (friend: User) => {
+    if (!user || !firestore) return;
+    
+    const friendRequestRef = collection(firestore, `users/${friend.id}/friendRequests`);
+    addDocumentNonBlocking(friendRequestRef, {
+      requesterId: user.uid,
+      recipientId: friend.id,
+      status: 'pending',
+    });
+  };
+
+  const handleAcceptRequest = async (request: FriendRequest) => {
+    if (!user || !firestore) return;
   
-    const sortedIds = [user.uid, friend.id].sort();
+    const batch = writeBatch(firestore);
+  
+    // 1. Create a new chat document
+    const sortedIds = [request.requesterId, request.recipientId].sort();
     const newChatId = sortedIds.join('-');
     const chatDocRef = doc(firestore, 'chats', newChatId);
+    batch.set(chatDocRef, {
+      id: newChatId,
+      participantIds: sortedIds,
+      unreadCount: {
+        [request.requesterId]: 0,
+        [request.recipientId]: 0,
+      },
+    });
   
-    try {
-        const chatDoc = await getDoc(chatDocRef);
-    
-        if (chatDoc.exists()) {
-          setSelectedChatId(chatDoc.id);
-        } else {
-          const newChatData: Partial<Chat> = {
-            id: newChatId,
-            participantIds: sortedIds,
-            unreadCount: {
-              [user.uid]: 0,
-              [friend.id]: 0,
-            },
-          };
-          setDocumentNonBlocking(chatDocRef, newChatData);
-          setSelectedChatId(newChatId);
-        }
-    } catch(e) {
-        console.log(e);
-    }
-
+    // 2. Add each user to the other's friends list
+    const currentUserRef = doc(firestore, 'users', user.uid);
+    const requesterUserRef = doc(firestore, 'users', request.requesterId);
+    batch.update(currentUserRef, { friendIds: arrayUnion(request.requesterId) });
+    batch.update(requesterUserRef, { friendIds: arrayUnion(user.uid) });
   
-    if (isMobile) {
-      setOpenMobile(false);
-    }
+    // 3. Delete the friend request
+    const requestDocRef = doc(firestore, 'users', user.uid, 'friendRequests', request.id);
+    batch.delete(requestDocRef);
+  
+    await batch.commit();
+    setSelectedChatId(newChatId);
+  };
+  
+  const handleRejectRequest = async (request: FriendRequest) => {
+      if (!user || !firestore) return;
+      const requestDocRef = doc(firestore, 'users', user.uid, 'friendRequests', request.id);
+      deleteDocumentNonBlocking(requestDocRef);
   };
 
   if (!user || !allUsers) {
@@ -176,21 +203,20 @@ export function ChatLayout() {
     );
   }
 
-  const currentUser = {
+  const currentUser = allUsers.find(u => u.id === user.uid) || {
     id: user.uid,
     email: user.email!,
     username: user.displayName || user.email?.split('@')[0] || 'User',
   };
   
   const existingUsers = allUsers || [];
-  const chatsWithPartners = (chats || []).map(chat => {
-    const partnerId = chat.participantIds.find(id => id !== currentUser.id);
-    const partner = existingUsers.find(u => u.id === partnerId);
-    return {
-      ...chat,
-      partner,
-    };
-  }).filter(chat => chat.partner);
+  const chatsWithPartners = (chats || [])
+    .map(chat => {
+        const partnerId = chat.participantIds.find(id => id !== currentUser.id);
+        const partner = existingUsers.find(u => u.id === partnerId);
+        return { ...chat, partner };
+    })
+    .filter(chat => chat.partner);
 
   return (
     <div className="flex h-screen w-full">
@@ -201,8 +227,11 @@ export function ChatLayout() {
         onSelectChat={handleSelectChat}
         onLogout={logout}
         selectedChatId={selectedChatId}
-        onAddFriend={handleAddFriendAndStartChat}
+        onAddFriend={handleAddFriend}
         onLogoClick={handleLogoClick}
+        friendRequests={friendRequests || []}
+        onAcceptRequest={handleAcceptRequest}
+        onRejectRequest={handleRejectRequest}
       />
       <SidebarInset className="flex-1 flex flex-col">
         <ChatView

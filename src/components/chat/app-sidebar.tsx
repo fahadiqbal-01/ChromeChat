@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { LogOut, Search, User as UserIcon } from 'lucide-react';
-import type { User, Chat } from '@/lib/types';
+import type { User, Chat, FriendRequest } from '@/lib/types';
 import { Logo } from '../logo';
 import {
   Avatar,
@@ -26,6 +26,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { FriendRequestList } from './friend-request-list';
 
 
 interface AppSidebarProps {
@@ -37,6 +38,9 @@ interface AppSidebarProps {
   selectedChatId?: string | null;
   onAddFriend: (friend: User) => void;
   onLogoClick: () => void;
+  friendRequests: FriendRequest[];
+  onAcceptRequest: (request: FriendRequest) => void;
+  onRejectRequest: (request: FriendRequest) => void;
 }
 
 export function AppSidebar({
@@ -48,15 +52,18 @@ export function AppSidebar({
   selectedChatId,
   onAddFriend,
   onLogoClick,
+  friendRequests,
+  onAcceptRequest,
+  onRejectRequest,
 }: AppSidebarProps) {
   const { state, setOpenMobile, isMobile } = useSidebar();
   const [searchTerm, setSearchTerm] = React.useState('');
   const { toast } = useToast();
   
   const friends = React.useMemo(() => {
-    if (!user || !chats) return [];
-    return chats.map(c => c.partner).filter((p): p is User => !!p);
-  }, [user, chats]);
+    if (!user || !user.friendIds) return [];
+    return allUsers.filter(u => user.friendIds?.includes(u.id));
+  }, [user, allUsers]);
 
   const searchResults = searchTerm.length > 0
   ? allUsers.filter(u => 
@@ -69,6 +76,10 @@ export function AppSidebar({
   const handleAddClick = (friend: User) => {
     onAddFriend(friend);
     setSearchTerm('');
+    toast({
+        title: 'Friend Request Sent',
+        description: `Your friend request to ${friend.username} has been sent.`,
+    });
   }
 
   const handleSelectChat = (chat: Chat & { partner?: User }) => {
@@ -136,14 +147,29 @@ export function AppSidebar({
           </SidebarGroup>
         )}
 
+        {friendRequests.length > 0 && (
+             <SidebarGroup>
+                <p className="px-2 text-xs font-semibold text-muted-foreground mb-2">Friend Requests</p>
+                <FriendRequestList
+                    requests={friendRequests}
+                    allUsers={allUsers}
+                    onAccept={onAcceptRequest}
+                    onReject={onRejectRequest}
+                />
+            </SidebarGroup>
+        )}
+
         <SidebarGroup>
            <p className="px-2 text-xs font-semibold text-muted-foreground mb-2">Friends</p>
           <SidebarMenu>
             {chats.map((chat) => {
               const friend = chat.partner;
-              const unreadCount = chat.unreadCount?.[user.id] || 0;
               const username = friend ? friend.username : 'Deleted User';
               const isFriendActive = friend?.isActive ?? false;
+
+              // This is a temporary fix until we have a better way to handle unread counts
+              const unreadCount = chat.unreadCount ? chat.unreadCount[user.id] || 0 : 0;
+
 
               return (
                 <SidebarMenuItem key={chat.id}>

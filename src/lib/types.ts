@@ -6,6 +6,15 @@ export interface User {
   email: string;
   isActive?: boolean;
   lastSeen?: Timestamp;
+  friendRequestIds?: string[];
+  friendIds?: string[];
+}
+
+export interface FriendRequest {
+    id: string;
+    requesterId: string;
+    recipientId: string;
+    status: 'pending' | 'accepted' | 'rejected';
 }
 
 export interface Message {

@@ -110,8 +110,7 @@ service cloud.firestore {
       match /friendRequests/{friendRequestId} {
         allow get, list: if isOwner(userId);
         allow create: if isSignedIn() && request.resource.data.recipientId == userId && request.resource.data.requesterId == request.auth.uid;
-        allow update: if isExistingOwner(userId);
-        allow delete: if isExistingOwner(userId);
+        allow update, delete: if isExistingOwner(userId);
       }
     }
 
