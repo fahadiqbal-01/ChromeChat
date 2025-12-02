@@ -156,11 +156,17 @@ export function ChatLayout() {
     await addDoc(aiMessagesCollection, { ...newUserMessage, timestamp: serverTimestamp() });
 
     const currentHistory = aiChatHistory || [];
+    
+    // Create a plain history array for the server function
+    const plainHistory = [...currentHistory, newUserMessage].map(msg => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+
 
     try {
       const response = await chatWithChromeBot({
-        history: [...currentHistory, newUserMessage],
-        prompt: '',
+        history: plainHistory,
       });
   
       const botMessage: AiMessage = { role: 'model', content: response };
