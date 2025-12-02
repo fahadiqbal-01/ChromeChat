@@ -121,6 +121,7 @@ service cloud.firestore {
      * @allow         (create) An authenticated user can create a chat, adding themselves as a member.
      *                (get) A member of the chat can read its metadata.
      *                (list) A user can only list chats they are a member of.
+     *                (delete) A participant can delete the chat document.
      * @deny          (list) A user cannot list all chats in the database if they are not a member.
      *                (get) A non-member cannot read chat metadata.
      * @principle     Shared Access (Closed Collaborators) using a denormalized `participantIds` list.
@@ -147,8 +148,7 @@ service cloud.firestore {
       match /messages/{messageId} {
         allow get, list: if isChatMember(chatId);
         allow create: if isChatMember(chatId) && request.resource.data.senderId == request.auth.uid;
-        allow update: if isExistingMessageOwner(chatId);
-        allow delete: if isExistingMessageOwner(chatId);
+        allow update, delete: if isExistingMessageOwner(chatId);
       }
     }
   }
