@@ -22,7 +22,6 @@ service cloud.firestore {
       allow create: if isSignedIn() && isOwner(userId);
 
       // A user can only update their own document.
-      // This is key for allowing users to update their friendIds list.
       allow update: if isSignedIn() && isOwner(userId);
       
       // A user can delete their own document
@@ -60,8 +59,12 @@ service cloud.firestore {
         // A chat participant can create a message if they are the sender
         allow create: if isSignedIn() && get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds.hasAny([request.auth.uid]) && request.resource.data.senderId == request.auth.uid;
         
-        // A user can only update or delete their own messages
-        allow update, delete: if isSignedIn() && resource.data.senderId == request.auth.uid;
+        // A user can only update their own messages
+        allow update: if isSignedIn() && resource.data.senderId == request.auth.uid;
+
+        // Any participant in the chat can delete any message.
+        // This is necessary for the "Clear Chat" functionality to work for both users.
+        allow delete: if isSignedIn() && get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds.hasAny([request.auth.uid]);
       }
     }
   }
