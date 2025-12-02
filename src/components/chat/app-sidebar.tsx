@@ -63,7 +63,7 @@ export function AppSidebar({
     return chats.map(chat => ({
       ...chat,
       partner: getChatPartner(chat)
-    }));
+    })).filter(chat => chat.partner); // Filter out chats where the partner doesn't exist
   }, [chats, allUsers, user.id]);
 
   const friends = React.useMemo(() => {
@@ -149,19 +149,8 @@ export function AppSidebar({
               const unreadCount = chat.unreadCount?.[user.id] || 0;
               
               if (!friend) {
-                return (
-                  <SidebarMenuItem key={chat.id}>
-                    <SidebarMenuButton
-                      onClick={onSelectDeletedUser}
-                      className="justify-start w-full relative opacity-50 cursor-not-allowed"
-                    >
-                      <Avatar className="h-6 w-6">
-                        <AvatarFallback>?</AvatarFallback>
-                      </Avatar>
-                      <span className="truncate">Deleted User</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
+                // This case should no longer happen due to the filter above, but as a fallback, we render nothing.
+                return null;
               }
 
               return (
