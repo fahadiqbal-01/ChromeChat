@@ -72,15 +72,15 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-sm">
+    <Card className="w-full max-w-sm ">
       <CardHeader className="items-center">
         <Logo className="mb-2" />
         <CardTitle>Welcome Back</CardTitle>
         <CardDescription>Enter your credentials to access your account</CardDescription>
       </CardHeader>
       <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <Form {...form} >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 ">
             <FormField
               control={form.control}
               name="email"
