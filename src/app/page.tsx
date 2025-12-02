@@ -32,7 +32,7 @@ export default function HomePage() {
   }
 
   return (
-    <SidebarProvider defaultOpen>
+    <SidebarProvider defaultOpen={false}>
       <ChatLayout />
     </SidebarProvider>
   );
