@@ -144,26 +144,6 @@ export function AppSidebar({
             </SidebarMenu>
           </SidebarGroup>
         )}
-        
-        <SidebarGroup>
-          <p className="px-2 text-xs font-semibold text-muted-foreground mb-2">AI Chat</p>
-          <SidebarMenu>
-             <SidebarMenuItem>
-              <SidebarMenuButton
-                onClick={handleSelectAiChat}
-                isActive={isAiChatSelected}
-                className="justify-start w-full relative"
-              >
-                <Avatar className="h-6 w-6">
-                  <AvatarFallback className="text-xs bg-primary text-primary-foreground">
-                    <Bot size={14}/>
-                  </AvatarFallback>
-                </Avatar>
-                <span className="truncate">ChromeBot</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroup>
 
         <SidebarGroup>
            <p className="px-2 text-xs font-semibold text-muted-foreground mb-2">Friends</p>
