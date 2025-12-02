@@ -84,6 +84,18 @@ export function AppSidebar({
     <Sidebar>
       <SidebarHeader>
         <Logo />
+        <div
+          className={`flex items-center gap-3 p-2 transition-all ${
+            state === 'collapsed' ? 'justify-center' : ''
+          }`}
+        >
+          <UserIcon className="h-8 w-8 rounded-full bg-muted p-1.5" />
+          {state === 'expanded' && (
+            <div className="flex-1 overflow-hidden">
+              <p className="truncate font-semibold">{user.username}</p>
+            </div>
+          )}
+        </div>
       </SidebarHeader>
       <SidebarContent className="p-2">
         <SidebarGroup>
@@ -140,30 +152,16 @@ export function AppSidebar({
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="border-t">
-        <Separator className="my-2" />
-        <div
-          className={`flex items-center gap-3 p-2 transition-all ${
-            state === 'collapsed' ? 'justify-center' : ''
-          }`}
-        >
-          <UserIcon className="h-8 w-8 rounded-full bg-muted p-1.5" />
-          {state === 'expanded' && (
-            <div className="flex-1 overflow-hidden">
-              <p className="truncate font-semibold">{user.username}</p>
-            </div>
-          )}
+      <SidebarFooter className="border-t p-2">
           <Button
             variant="ghost"
-            size="icon"
             onClick={onLogout}
-            className={`shrink-0 ${
-              state === 'collapsed' ? '' : 'ml-auto'
+            className={`w-full justify-center ${
+              state === 'collapsed' ? 'p-2' : ''
             }`}
           >
-            <LogOut className="h-5 w-5" />
+            {state === 'collapsed' ? <LogOut className="h-5 w-5" /> : 'Logout'}
           </Button>
-        </div>
       </SidebarFooter>
     </Sidebar>
   );
