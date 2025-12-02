@@ -1,9 +1,4 @@
 'use server';
-/**
- * @fileOverview A simple AI chatbot flow.
- *
- * - chatWithChromeBot - A function that handles the chat interaction.
- */
 
 import { ai } from '@/ai/genkit';
 import {
@@ -21,23 +16,36 @@ const chatbotFlow = ai.defineFlow(
   },
   async (input) => {
     const systemPrompt = `You are ChromeBot, a helpful and friendly AI assistant integrated into a chat application. Your responses should be concise, helpful, and conversational.`;
-    
+
     const { output } = await ai.generate({
       model: 'googleai/gemini-2.5-flash',
-      contents: [
-        // System message to set the bot's persona
-        { role: 'system', parts: [{ text: systemPrompt }] },
+
+      messages: [
+        // System prompt
+        {
+          role: 'system',
+          content: [{ text: systemPrompt }],
+        },
+
         // Map existing history
         ...input.history.map((m) => ({
           role: m.role,
-          parts: [{ text: m.content }],
+          content: [{ text: m.content }],
         })),
+
         // Add the new user prompt
-        { role: 'user', parts: [{ text: input.prompt }] },
+        {
+          role: 'user',
+          content: [{ text: input.prompt }],
+        },
       ],
     });
 
-    return output?.text() || "I'm sorry, I couldn't generate a response.";
+    const message =
+      output?.content?.map((c) => c.text).join(' ') ||
+      "I'm sorry, I couldn't generate a response.";
+
+    return message;
   }
 );
 
