@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -137,7 +138,7 @@ export function AppSidebar({
           <SidebarMenu>
             {chats.map((chat) => {
               const friend = getChatPartner(chat);
-              if (!friend) return null;
+              if (!friend) return null; // If friend doesn't exist in allUsers, don't render them
               const unreadCount = chat.unreadCount?.[user.id] || 0;
               return (
                 <SidebarMenuItem key={chat.id}>
