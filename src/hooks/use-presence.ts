@@ -28,6 +28,7 @@ export function usePresence(userId?: string) {
         await updateDoc(userStatusRef, {
           isActive: false,
           lastSeen: serverTimestamp(),
+          activeChatId: null,
         });
       } catch (error) {
         console.error('Failed to set user status to offline:', error);
@@ -60,3 +61,5 @@ export function usePresence(userId?: string) {
     };
   }, [userId, firestore]);
 }
+
+    

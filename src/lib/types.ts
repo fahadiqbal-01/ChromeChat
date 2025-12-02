@@ -8,6 +8,7 @@ export interface User {
   lastSeen?: Timestamp;
   friendRequestIds?: string[];
   friendIds?: string[];
+  activeChatId?: string;
 }
 
 export interface FriendRequest {
@@ -32,3 +33,5 @@ export interface Chat {
   messages: Message[];
   unreadCount?: { [key: string]: number };
 }
+
+    

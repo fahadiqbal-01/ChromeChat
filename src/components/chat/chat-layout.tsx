@@ -12,6 +12,7 @@ import {
   writeBatch,
   increment,
   arrayUnion,
+  getDoc,
 } from 'firebase/firestore';
 import { SidebarInset, useSidebar } from '@/components/ui/sidebar';
 import { AppSidebar } from './app-sidebar';
@@ -104,6 +105,10 @@ export function ChatLayout() {
       updateDocumentNonBlocking(chatDocRef, {
         [unreadCountKey]: 0,
       });
+
+      // Track currently open chat for presence
+      const userDocRef = doc(firestore, 'users', user.uid);
+      updateDocumentNonBlocking(userDocRef, { activeChatId: chatId });
     }
   };
 
@@ -111,17 +116,17 @@ export function ChatLayout() {
   const handleSendMessage = async (text: string) => {
     if (!selectedChatId || !user || !firestore) return;
     if (!selectedChat) return;
-
+  
     const partnerId = selectedChat.participantIds.find((id) => id !== user.uid);
     if (!partnerId) return;
-
+  
     const messagesCol = collection(
       firestore,
       'chats',
       selectedChatId,
       'messages'
     );
-
+  
     addDocumentNonBlocking(messagesCol, {
       chatId: selectedChatId,
       senderId: user.uid,
@@ -129,16 +134,20 @@ export function ChatLayout() {
       timestamp: serverTimestamp(),
       read: false,
     });
-
+  
     const chatDocRef = doc(firestore, 'chats', selectedChatId);
     
-    // Only increment unread count if the chat is not the currently selected one.
-    // This check is implicitly handled by not doing it if selected, but this is for clarity.
-    if (selectedChatId !== selectedChat.id) {
-        const unreadCountKey = `unreadCount.${partnerId}`;
-        updateDocumentNonBlocking(chatDocRef, {
-          [unreadCountKey]: increment(1),
-        });
+    // Check partner's presence to decide whether to increment unread count
+    const partnerUserDocRef = doc(firestore, 'users', partnerId);
+    const partnerDoc = await getDoc(partnerUserDocRef);
+    const partnerData = partnerDoc.data() as User;
+
+    // Only increment if the partner is not online OR is online but not in this chat
+    if (!partnerData?.isActive || partnerData?.activeChatId !== selectedChatId) {
+      const unreadCountKey = `unreadCount.${partnerId}`;
+      updateDocumentNonBlocking(chatDocRef, {
+        [unreadCountKey]: increment(1),
+      });
     }
   };
 
@@ -312,3 +321,5 @@ export function ChatLayout() {
     </div>
   );
 }
+
+    
