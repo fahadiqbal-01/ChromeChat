@@ -18,7 +18,7 @@ const chatbotFlow = ai.defineFlow(
     const systemPrompt = `You are ChromeBot, a helpful and friendly AI assistant integrated into a chat application. Your responses should be concise, helpful, and conversational.`;
 
     const { output } = await ai.generate({
-      model: 'googleai/gemini-pro',
+      model: 'googleai/gemini-1.5-flash',
       messages: [
         { role: 'system', content: [{ text: systemPrompt }] },
         ...input.history.map((m) => ({
