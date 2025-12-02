@@ -101,18 +101,18 @@ export function AppSidebar({
       <SidebarHeader>
         <div
           className={`flex items-center gap-3 p-2 transition-all ${
-            state === 'collapsed' ? 'justify-center' : ''
+            state === 'collapsed' ? 'flex-col' : ''
           }`}
         >
           <UserIcon className="h-10 w-10 md:h-8 md:w-8 rounded-full bg-muted p-1.5" />
-          {state === 'expanded' && (
-            <div className="flex-1 overflow-hidden flex justify-between items-center">
-              <p className="truncate font-semibold text-base md:text-sm">{user.username}</p>
-                <Button variant="ghost" size="icon" onClick={toggleSidebar} className="md:hidden">
-                    <X className="h-6 w-6" />
-                </Button>
-            </div>
-          )}
+          <div className={`flex-1 overflow-hidden ${state === 'expanded' ? 'flex justify-between items-center' : 'text-center'}`}>
+            <p className="truncate font-semibold text-base md:text-sm">{user.username}</p>
+            {state === 'expanded' && (
+              <Button variant="ghost" size="icon" onClick={toggleSidebar} className="md:hidden">
+                  <X className="h-6 w-6" />
+              </Button>
+            )}
+          </div>
         </div>
       </SidebarHeader>
       <SidebarContent className="p-2">
