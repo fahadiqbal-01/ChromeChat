@@ -32,6 +32,7 @@ interface AppSidebarProps {
   onLogout: () => void;
   selectedChatId?: string | null;
   onAddFriend: (friend: User) => void;
+  onLogoClick: () => void;
 }
 
 export function AppSidebar({
@@ -41,7 +42,8 @@ export function AppSidebar({
   onSelectChat,
   onLogout,
   selectedChatId,
-  onAddFriend
+  onAddFriend,
+  onLogoClick
 }: AppSidebarProps) {
   const { state, setOpenMobile, isMobile } = useSidebar();
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -82,7 +84,9 @@ export function AppSidebar({
     <Sidebar>
       <SidebarHeader>
         <div className="p-2 pt-4">
-          <Logo />
+            <Button variant="ghost" onClick={onLogoClick} className="w-full justify-start p-0 h-auto">
+                <Logo />
+            </Button>
         </div>
         <div
           className={`flex items-center gap-3 p-2 transition-all ${
@@ -127,7 +131,7 @@ export function AppSidebar({
         )}
 
         <SidebarGroup>
-           <p className="px-2 text-xs font-semibold text-muted-foreground">Friends</p>
+           <p className="px-2 text-xs font-semibold text-muted-foreground mb-2">Friends</p>
           <SidebarMenu>
             {chats.map((chat) => {
               const friend = getChatPartner(chat);

@@ -8,32 +8,38 @@ import {
   serverTimestamp,
   getDocs,
   doc,
-  getDoc,
   writeBatch,
   deleteDoc,
+  getDoc,
 } from 'firebase/firestore';
 import { SidebarInset, useSidebar } from '@/components/ui/sidebar';
 import { AppSidebar } from './app-sidebar';
 import { ChatView } from './chat-view';
-import { useAuth as useFirebaseAuthHook } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/use-auth';
 import type { Chat, User } from '@/lib/types';
 import {
   useCollection,
   useMemoFirebase,
   useFirestore,
   useUser,
-  addDocumentNonBlocking,
+  setDocumentNonBlocking,
   FirestorePermissionError,
   errorEmitter,
-  setDocumentNonBlocking,
 } from '@/firebase';
 
 export function ChatLayout() {
   const { user } = useUser();
-  const { logout } = useFirebaseAuthHook();
+  const { logout } = useAuth();
   const firestore = useFirestore();
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const { setOpenMobile, isMobile } = useSidebar();
+
+  const handleLogoClick = () => {
+    setSelectedChatId(null);
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   // Memoize Firestore queries
   const usersQuery = useMemoFirebase(
@@ -66,7 +72,6 @@ export function ChatLayout() {
     }
   };
 
-
   const handleSendMessage = (text: string) => {
     if (!selectedChatId || !user || !firestore) return;
 
@@ -76,7 +81,8 @@ export function ChatLayout() {
       selectedChatId,
       'messages'
     );
-    addDocumentNonBlocking(messagesCol, {
+    // This is intentionally non-blocking for optimistic UI
+    addDoc(messagesCol, {
       chatId: selectedChatId,
       senderId: user.uid,
       text,
@@ -92,7 +98,7 @@ export function ChatLayout() {
     try {
       const messagesSnapshot = await getDocs(messagesQuery);
       if (messagesSnapshot.empty) return;
-      
+
       const batch = writeBatch(firestore);
       messagesSnapshot.docs.forEach((doc) => {
         batch.delete(doc.ref);
@@ -104,7 +110,7 @@ export function ChatLayout() {
         path: `chats/${chatId}/messages`,
       });
       errorEmitter.emit('permission-error', contextualError);
-      throw e; 
+      throw e;
     }
   };
 
@@ -115,11 +121,14 @@ export function ChatLayout() {
     const chatIdToDelete = sortedIds.join('-');
 
     try {
+      // First, delete all messages in the subcollection
       await handleClearChat(chatIdToDelete);
-      
+
+      // Then, delete the chat document itself
       const chatDocRef = doc(firestore, 'chats', chatIdToDelete);
       await deleteDoc(chatDocRef);
-      
+
+      // If the deleted chat was the selected one, clear the view
       if (selectedChatId === chatIdToDelete) {
         setSelectedChatId(null);
       }
@@ -142,31 +151,36 @@ export function ChatLayout() {
 
     const sortedIds = [user.uid, friend.id].sort();
     const newChatId = sortedIds.join('-');
-
     const chatDocRef = doc(firestore, 'chats', newChatId);
+
     try {
       const chatDoc = await getDoc(chatDocRef);
+
       if (chatDoc.exists()) {
+        // Chat already exists, just select it
         setSelectedChatId(chatDoc.id);
       } else {
+        // Create new chat
         const newChatData = {
           id: newChatId,
           participantIds: sortedIds,
           createdAt: serverTimestamp(),
         };
+        // Use non-blocking write for optimistic UI
         setDocumentNonBlocking(chatDocRef, newChatData, { merge: false });
         setSelectedChatId(newChatId);
       }
     } catch (e) {
-       const contextualError = new FirestorePermissionError({
+      // This will catch errors from getDoc, for example if rules deny it
+      const contextualError = new FirestorePermissionError({
         operation: 'get',
         path: `chats/${newChatId}`,
       });
       errorEmitter.emit('permission-error', contextualError);
-      console.error("Error checking or creating chat document: ", e);
+      console.error('Error checking or creating chat document: ', e);
     }
 
-    if(isMobile) {
+    if (isMobile) {
       setOpenMobile(false);
     }
   };
@@ -189,6 +203,7 @@ export function ChatLayout() {
         onLogout={logout}
         selectedChatId={selectedChatId}
         onAddFriend={handleAddFriendAndStartChat}
+        onLogoClick={handleLogoClick}
       />
       <SidebarInset className="flex-1 flex flex-col">
         <ChatView
