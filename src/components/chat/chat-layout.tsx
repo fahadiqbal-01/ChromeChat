@@ -10,14 +10,13 @@ import { AppSidebar } from './app-sidebar';
 import { ChatView } from './chat-view';
 import { useAuth } from '@/hooks/use-auth';
 import type { Chat, Message, User } from '@/lib/types';
-import { mockChats, mockMessages, mockUsers } from '@/lib/mock-data';
+import { mockChats, mockMessages } from '@/lib/mock-data';
 
 export function ChatLayout() {
-  const { user, logout } = useAuth();
+  const { user, logout, users: allUsers } = useAuth();
   const [chats, setChats] = useState<Chat[]>(mockChats);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [allMessages, setAllMessages] = useState<Message[]>(mockMessages);
-  const [allUsers] = useState<User[]>(mockUsers);
   const [friends, setFriends] = useState<User[]>([]);
 
   useEffect(() => {
