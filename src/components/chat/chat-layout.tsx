@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   collection,
   query,
@@ -61,7 +61,7 @@ export function ChatLayout() {
   );
 
   const { data: allUsers } = useCollection<User>(usersQuery);
-  const { data: chats } = useCollection<Chat>(chatsQuery);
+  const { data: chats, setData: setChats } = useCollection<Chat>(chatsQuery);
 
   const selectedChat = useMemo(() => {
     if (!selectedChatId) return null;
@@ -135,14 +135,21 @@ export function ChatLayout() {
   };
 
   const handleUnfriend = async (friendId: string) => {
-    if (!user || !firestore) return;
+    if (!user || !firestore || !chats) return;
 
     const sortedIds = [user.uid, friendId].sort();
     const chatIdToDelete = sortedIds.join('-');
-
+    
+    // Clear chat messages first
     await handleClearChat(chatIdToDelete);
+
+    // Then delete the chat document
     await deleteDoc(doc(firestore, 'chats', chatIdToDelete));
 
+    // Update local state to remove the chat from the sidebar
+    setChats(chats.filter(chat => chat.id !== chatIdToDelete));
+
+    // If the unfriended chat was selected, clear the view
     if (selectedChatId === chatIdToDelete) {
       setSelectedChatId(null);
     }
