@@ -3,7 +3,6 @@
 import {
   useAuth as useFirebaseAuth,
   useFirestore,
-  setDocumentNonBlocking,
 } from '@/firebase';
 import {
   createUserWithEmailAndPassword,
@@ -17,6 +16,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect } from 'react';
 import { FirebaseError } from 'firebase/app';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 export const useAuth = () => {
   const auth = useFirebaseAuth();

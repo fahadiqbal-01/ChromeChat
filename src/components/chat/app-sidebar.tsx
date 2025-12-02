@@ -13,7 +13,6 @@ import {
   SidebarInput,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { LogOut, Search, User as UserIcon } from 'lucide-react';
 import type { User, Chat } from '@/lib/types';
@@ -21,7 +20,6 @@ import { Logo } from '../logo';
 import {
   Avatar,
   AvatarFallback,
-  AvatarImage,
 } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/use-auth';
 
