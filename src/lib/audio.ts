@@ -32,11 +32,11 @@ function playSound(src: string, volume: number = 0.5) {
 
 export function playMessageSentSound() {
     // A subtle "swoosh" sound
-    playSound('https://firebasestudio.app/sounds/swoosh.mp3', 0.3);
+    playSound('https://storage.googleapis.com/firebase-studio-starter-app-assets/swoosh.mp3', 0.3);
 }
 
 export function playFriendRequestSound() {
     // A gentle "pop" sound
-    playSound('https://firebasestudio.app/sounds/pop.mp3', 0.5);
+    playSound('https://storage.googleapis.com/firebase-studio-starter-app-assets/pop.mp3', 0.5);
 }
 
