@@ -23,6 +23,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from '@/components/ui/avatar';
+import { useAuth } from '@/hooks/use-auth';
 
 
 interface AppSidebarProps {
@@ -31,9 +32,8 @@ interface AppSidebarProps {
   allUsers: User[];
   onSelectChat: (chatId: string) => void;
   onLogout: () => void;
-  selectedChatId?: string;
-  friends: User[];
-  onAddFriend: (friendId: string) => void;
+  selectedChatId?: string | null;
+  onAddFriend: (friend: User) => void;
 }
 
 export function AppSidebar({
@@ -43,12 +43,18 @@ export function AppSidebar({
   onSelectChat,
   onLogout,
   selectedChatId,
-  friends,
   onAddFriend
 }: AppSidebarProps) {
   const { state } = useSidebar();
   const [searchTerm, setSearchTerm] = React.useState('');
   
+  const friends = React.useMemo(() => {
+    if (!user || !chats) return [];
+    const friendIds = chats.flatMap(c => c.participantIds).filter(id => id !== user.id);
+    const uniqueFriendIds = [...new Set(friendIds)];
+    return allUsers.filter(u => uniqueFriendIds.includes(u.id));
+  }, [user, chats, allUsers]);
+
   const searchResults = searchTerm.length > 0
   ? allUsers.filter(u => 
       u.id !== user.id && 
@@ -62,8 +68,8 @@ export function AppSidebar({
     return allUsers.find(u => u.id === partnerId);
   };
   
-  const handleAddClick = (friendId: string) => {
-    onAddFriend(friendId);
+  const handleAddClick = (friend: User) => {
+    onAddFriend(friend);
     setSearchTerm('');
   }
 
@@ -93,7 +99,7 @@ export function AppSidebar({
                 <SidebarMenuItem key={foundUser.id}>
                     <div className="flex w-full items-center justify-between p-2 text-sm">
                         <span>{foundUser.username}</span>
-                        <Button size="sm" variant="outline" onClick={() => handleAddClick(foundUser.id)}>Add</Button>
+                        <Button size="sm" variant="outline" onClick={() => handleAddClick(foundUser)}>Add</Button>
                     </div>
                 </SidebarMenuItem>
               ))}
@@ -104,9 +110,9 @@ export function AppSidebar({
         <SidebarGroup>
            <p className="px-2 text-xs font-semibold text-muted-foreground">Friends</p>
           <SidebarMenu>
-            {friends.map((friend) => {
-              const chat = chats.find(c => c.participantIds.includes(friend.id));
-              if (!chat) return null;
+            {chats.map((chat) => {
+              const friend = getChatPartner(chat);
+              if (!friend) return null;
               return (
                 <SidebarMenuItem key={chat.id}>
                   <SidebarMenuButton

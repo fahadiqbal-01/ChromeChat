@@ -1,8 +1,9 @@
+import type { Timestamp } from 'firebase/firestore';
+
 export interface User {
   id: string;
   username: string;
   email: string;
-  password?: string; // Should not be sent to client
 }
 
 export interface Message {
@@ -10,7 +11,7 @@ export interface Message {
   chatId: string;
   senderId: string;
   text: string;
-  timestamp: number;
+  timestamp: Timestamp | number;
 }
 
 export interface Chat {

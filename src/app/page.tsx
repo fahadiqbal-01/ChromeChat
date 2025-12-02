@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { ChatLayout } from '@/components/chat/chat-layout';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useUser } from '@/firebase';
 
 export default function HomePage() {
-  const { user, loading } = useAuth();
+  const { user, loading } = useUser();
   const router = useRouter();
 
   useEffect(() => {

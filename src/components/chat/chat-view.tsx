@@ -1,16 +1,17 @@
 'use client';
 
+import type { User as AuthUser } from 'firebase/auth';
 import type { User, Chat, Message } from '@/lib/types';
 import { ChatHeader } from './chat-header';
 import { MessageList } from './message-list';
 import { MessageInput } from './message-input';
-import { MessageSquare } from 'lucide-react';
 import { Logo } from '../logo';
 import { SidebarTrigger } from '../ui/sidebar';
-import { Button } from '../ui/button';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, orderBy, query } from 'firebase/firestore';
 
 interface ChatViewProps {
-  user: User;
+  currentUser: AuthUser;
   chat: Chat | null;
   onSendMessage: (text: string) => void;
   onClearChat: (chatId: string) => void;
@@ -18,13 +19,27 @@ interface ChatViewProps {
   allUsers: User[];
 }
 
-export function ChatView({ user, chat, onSendMessage, onClearChat, onUnfriend, allUsers }: ChatViewProps) {
+export function ChatView({ currentUser, chat, onSendMessage, onClearChat, onUnfriend, allUsers }: ChatViewProps) {
+  const firestore = useFirestore();
+
+  const messagesQuery = useMemoFirebase(
+    () =>
+      firestore && chat
+        ? query(
+            collection(firestore, 'chats', chat.id, 'messages'),
+            orderBy('timestamp', 'asc')
+          )
+        : null,
+    [firestore, chat]
+  );
+  
+  const { data: messages } = useCollection<Message>(messagesQuery);
+
   if (!chat) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 bg-background">
         <div className="absolute left-4 top-4">
-          <SidebarTrigger>
-          </SidebarTrigger>
+          <SidebarTrigger />
         </div>
         <div className="flex flex-col items-center gap-2 text-center">
             <Logo className="mb-4" />
@@ -35,7 +50,7 @@ export function ChatView({ user, chat, onSendMessage, onClearChat, onUnfriend, a
     );
   }
 
-  const partnerId = chat.participantIds.find(id => id !== user.id);
+  const partnerId = chat.participantIds.find(id => id !== currentUser.uid);
   const partner = allUsers.find(u => u.id === partnerId);
 
   if (!partner) {
@@ -49,7 +64,7 @@ export function ChatView({ user, chat, onSendMessage, onClearChat, onUnfriend, a
         onClearChat={() => onClearChat(chat.id)}
         onUnfriend={() => onUnfriend(partner.id)}
       />
-      <MessageList messages={chat.messages} currentUserId={user.id} />
+      <MessageList messages={messages || []} currentUserId={currentUser.uid} />
       <MessageInput onSendMessage={onSendMessage} />
     </div>
   );
