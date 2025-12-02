@@ -9,7 +9,7 @@ import {
   getDocs,
   doc,
   getDoc,
-  setDoc,
+  writeBatch,
 } from 'firebase/firestore';
 import { SidebarInset, useSidebar } from '@/components/ui/sidebar';
 import { AppSidebar } from './app-sidebar';
@@ -89,24 +89,23 @@ export function ChatLayout() {
     const messagesQuery = query(
       collection(firestore, 'chats', chatId, 'messages')
     );
-    // getDocs is a one-time read, which is fine to await.
-    // The permission error might happen here or in the subsequent deletes.
-    const messagesSnapshot = await getDocs(messagesQuery).catch((e) => {
-      // If reading the collection fails, emit a contextual error.
+    try {
+      const messagesSnapshot = await getDocs(messagesQuery);
+      if (messagesSnapshot.empty) return;
+      
+      const batch = writeBatch(firestore);
+      messagesSnapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+    } catch (e) {
       const contextualError = new FirestorePermissionError({
         operation: 'list',
         path: `chats/${chatId}/messages`,
       });
       errorEmitter.emit('permission-error', contextualError);
-      throw e; // re-throw to stop execution
-    });
-
-    if (messagesSnapshot.empty) return;
-
-    // Use non-blocking deletes for each message
-    messagesSnapshot.docs.forEach((messageDoc) => {
-      deleteDocumentNonBlocking(messageDoc.ref);
-    });
+      throw e; 
+    }
   };
 
   const handleUnfriend = async (friendId: string) => {
@@ -115,26 +114,30 @@ export function ChatLayout() {
     const sortedIds = [user.uid, friendId].sort();
     const chatIdToDelete = sortedIds.join('-');
 
-    // First, try to delete all messages in the subcollection
     try {
       await handleClearChat(chatIdToDelete);
-    } catch (e) {
-      // Error is already emitted by handleClearChat, so just log and exit
-      console.error('Could not clear chat during unfriend operation.', e);
-      return;
-    }
-
-
-    // Then, delete the chat document itself using a non-blocking call
-    const chatDocRef = doc(firestore, 'chats', chatIdToDelete);
-    deleteDocumentNonBlocking(chatDocRef);
-
-    // Finally, reset the UI
-    if (selectedChatId === chatIdToDelete) {
-      setSelectedChatId(null);
+      
+      const chatDocRef = doc(firestore, 'chats', chatIdToDelete);
+      // Use a standard delete for this operation with proper error handling
+      await deleteDoc(chatDocRef);
+      
+      // Finally, reset the UI
+      if (selectedChatId === chatIdToDelete) {
+        setSelectedChatId(null);
+      }
+    } catch (e: any) {
+      if (e instanceof FirestorePermissionError) {
+        errorEmitter.emit('permission-error', e);
+      } else {
+        const contextualError = new FirestorePermissionError({
+          operation: 'delete',
+          path: `chats/${chatIdToDelete}`,
+        });
+        errorEmitter.emit('permission-error', contextualError);
+      }
+      console.error('Could not unfriend user.', e);
     }
   };
-
 
   const handleAddFriendAndStartChat = async (friend: User) => {
     if (!user || !firestore || user.uid === friend.id) return;
@@ -143,26 +146,32 @@ export function ChatLayout() {
     const newChatId = sortedIds.join('-');
 
     const chatDocRef = doc(firestore, 'chats', newChatId);
-    const chatDoc = await getDoc(chatDocRef).catch((e) => {
+    try {
+      const chatDoc = await getDoc(chatDocRef);
+      if (chatDoc.exists()) {
+        setSelectedChatId(chatDoc.id);
+      } else {
+        const newChatData = {
+          id: newChatId,
+          participantIds: sortedIds,
+          createdAt: serverTimestamp(),
+        };
+        // Use setDocumentNonBlocking for optimistic UI, it has error handling built-in
+        setDocumentNonBlocking(chatDocRef, newChatData, { merge: false });
+        setSelectedChatId(newChatId);
+      }
+    } catch (e) {
        const contextualError = new FirestorePermissionError({
         operation: 'get',
         path: `chats/${newChatId}`,
       });
       errorEmitter.emit('permission-error', contextualError);
-      throw e;
-    });
-
-    if (chatDoc.exists()) {
-      setSelectedChatId(chatDoc.id);
-    } else {
-      const newChatData = {
-        participantIds: sortedIds,
-        createdAt: serverTimestamp(),
-      };
-      setDocumentNonBlocking(chatDocRef, newChatData, {});
-      setSelectedChatId(newChatId);
+      console.error("Error checking or creating chat document: ", e);
     }
-    setOpenMobile(false);
+
+    if(isMobile) {
+      setOpenMobile(false);
+    }
   };
 
   if (!user || !allUsers) return null;

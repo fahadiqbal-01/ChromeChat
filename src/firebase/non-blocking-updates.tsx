@@ -4,7 +4,7 @@ import {
   setDoc,
   addDoc,
   updateDoc,
-  deleteDoc,
+  deleteDoc as fbDeleteDoc,
   CollectionReference,
   DocumentReference,
   SetOptions,
@@ -76,7 +76,7 @@ export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) 
  * Does NOT await the write operation internally.
  */
 export function deleteDocumentNonBlocking(docRef: DocumentReference) {
-  deleteDoc(docRef)
+  fbDeleteDoc(docRef)
     .catch(error => {
       errorEmitter.emit(
         'permission-error',
