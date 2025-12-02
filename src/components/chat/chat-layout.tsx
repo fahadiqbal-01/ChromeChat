@@ -19,7 +19,7 @@ import { SidebarInset, useSidebar } from '@/components/ui/sidebar';
 import { AppSidebar } from './app-sidebar';
 import { ChatView } from './chat-view';
 import { useAuth } from '@/hooks/use-auth';
-import type { Chat, User, Message as MessageType } from '@/lib/types';
+import type { Chat, User } from '@/lib/types';
 import {
   useCollection,
   useMemoFirebase,
@@ -27,24 +27,13 @@ import {
   useUser,
 } from '@/firebase';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { chatWithChromeBot, type ChatInput } from '@/ai/flows/chatbot-flow';
-import { Timestamp } from 'firebase/firestore';
 
-
-interface AiMessage {
-  id: string | number;
-  role: 'user' | 'model';
-  content: string;
-  timestamp: Timestamp;
-}
 
 export function ChatLayout() {
   const { user } = useUser();
   const { logout } = useAuth();
   const firestore = useFirestore();
-  const [selectedChatId, setSelectedChatId] = useState<string | null>('chromebot');
-  const [aiChatHistory, setAiChatHistory] = useState<AiMessage[]>([]);
-  const [isBotTyping, setIsBotTyping] = useState(false);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const { setOpenMobile, isMobile } = useSidebar();
 
   const handleLogoClick = () => {
@@ -73,7 +62,7 @@ export function ChatLayout() {
   const { data: chats } = useCollection<Chat>(chatsQuery);
 
   const selectedChat = useMemo(() => {
-    if (!selectedChatId || selectedChatId === 'chromebot') return null;
+    if (!selectedChatId) return null;
     return chats?.find((c) => c.id === selectedChatId) || null;
   }, [selectedChatId, chats]);
 
@@ -83,7 +72,7 @@ export function ChatLayout() {
       setOpenMobile(false);
     }
 
-    if (user && firestore && chatId !== 'chromebot') {
+    if (user && firestore) {
       const chatDocRef = doc(firestore, 'chats', chatId);
       const unreadCountKey = `unreadCount.${user.uid}`;
       try {
@@ -98,47 +87,6 @@ export function ChatLayout() {
 
   const handleSendMessage = async (text: string) => {
     if (!selectedChatId || !user || !firestore) return;
-
-    if (selectedChatId === 'chromebot') {
-      const userMessage: AiMessage = {
-        id: Date.now(),
-        role: 'user',
-        content: text,
-        timestamp: Timestamp.now(),
-      };
-      const newHistory = [...aiChatHistory, userMessage];
-      setAiChatHistory(newHistory);
-      setIsBotTyping(true);
-
-      const chatInput: ChatInput = {
-        history: aiChatHistory.map(m => ({role: m.role, content: m.content})),
-        prompt: text,
-      };
-
-      try {
-        const botResponse = await chatWithChromeBot(chatInput);
-        const botMessage: AiMessage = {
-          id: Date.now() + 1,
-          role: 'model',
-          content: botResponse,
-          timestamp: Timestamp.now(),
-        };
-        setAiChatHistory(prev => [...prev, botMessage]);
-      } catch (error) {
-        console.error("Error with chatbot:", error);
-        const errorMessage: AiMessage = {
-            id: Date.now() + 1,
-            role: 'model',
-            content: "Sorry, I'm having trouble connecting. Please try again later.",
-            timestamp: Timestamp.now(),
-        };
-        setAiChatHistory(prev => [...prev, errorMessage]);
-      } finally {
-        setIsBotTyping(false);
-      }
-      return;
-    }
-
     if (!selectedChat) return;
 
     const partnerId = selectedChat.participantIds.find((id) => id !== user.uid);
@@ -168,10 +116,6 @@ export function ChatLayout() {
   };
 
   const handleClearChat = async (chatId: string) => {
-    if (chatId === 'chromebot') {
-      setAiChatHistory([]);
-      return;
-    }
     if (!firestore) return;
 
     const messagesQuery = query(
@@ -246,27 +190,6 @@ export function ChatLayout() {
     username: user.displayName || user.email?.split('@')[0] || 'User',
   };
 
-  const botUser = {
-      id: 'chromebot',
-      username: 'ChromeBot',
-      email: 'bot@chromechat.ai'
-  }
-
-  const aiChat: Chat | null = {
-    id: 'chromebot',
-    participantIds: [currentUser.id, botUser.id],
-    messages: aiChatHistory.map(m => ({
-        id: String(m.id),
-        chatId: 'chromebot',
-        senderId: m.role === 'user' ? currentUser.id : botUser.id,
-        text: m.content,
-        timestamp: m.timestamp,
-        read: true,
-    } as MessageType))
-  };
-
-  const currentChat = selectedChatId === 'chromebot' ? aiChat : selectedChat;
-
   return (
     <div className="flex h-screen w-full">
       <AppSidebar
@@ -282,12 +205,11 @@ export function ChatLayout() {
       <SidebarInset className="flex-1 flex flex-col">
         <ChatView
           currentUser={currentUser}
-          chat={currentChat}
+          chat={selectedChat}
           onSendMessage={handleSendMessage}
           onClearChat={handleClearChat}
           onUnfriend={handleUnfriend}
-          allUsers={[...allUsers, botUser]}
-          isBotTyping={isBotTyping}
+          allUsers={allUsers}
         />
       </SidebarInset>
     </div>

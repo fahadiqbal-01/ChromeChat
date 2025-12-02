@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
 import { Avatar, AvatarFallback } from '../ui/avatar';
-import { Bot } from 'lucide-react';
 
 interface MessageListProps {
   messages: Message[];
@@ -45,15 +44,9 @@ export function MessageList({ messages, currentUserId, partner }: MessageListPro
             >
               {!isCurrentUser && (
                 <Avatar className="h-6 w-6">
-                   {partner.id === 'chromebot' ? (
-                     <AvatarFallback className="bg-primary text-primary-foreground">
-                        <Bot className="h-4 w-4" />
-                     </AvatarFallback>
-                   ) : (
                     <AvatarFallback>
                         {partner.username.charAt(0).toUpperCase()}
                     </AvatarFallback>
-                   )}
                 </Avatar>
               )}
               <div
