@@ -24,6 +24,8 @@ import {
   useUser,
   addDocumentNonBlocking,
   deleteDocumentNonBlocking,
+  FirestorePermissionError,
+  errorEmitter,
 } from '@/firebase';
 
 export function ChatLayout() {
@@ -31,7 +33,7 @@ export function ChatLayout() {
   const { logout } = useFirebaseAuthHook();
   const firestore = useFirestore();
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
-  const { setOpenMobile } = useSidebar();
+  const { setOpenMobile, isMobile } = useSidebar();
 
   // Memoize Firestore queries
   const usersQuery = useMemoFirebase(
@@ -64,7 +66,6 @@ export function ChatLayout() {
     }
   };
 
-  const { isMobile } = useSidebar();
 
   const handleSendMessage = (text: string) => {
     if (!selectedChatId || !user || !firestore) return;
