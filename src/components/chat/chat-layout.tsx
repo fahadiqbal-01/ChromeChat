@@ -100,13 +100,20 @@ export function ChatLayout() {
       selectedChatId,
       'messages'
     );
-    // This is intentionally non-blocking for optimistic UI
+    
     addDoc(messagesCol, {
       chatId: selectedChatId,
       senderId: user.uid,
       text,
       timestamp: serverTimestamp(),
       read: false,
+    }).catch(e => {
+        const contextualError = new FirestorePermissionError({
+            operation: 'create',
+            path: `chats/${selectedChatId}/messages`,
+            requestResourceData: { text },
+        });
+        errorEmitter.emit('permission-error', contextualError);
     });
     
     // Increment unread count for the receiver
