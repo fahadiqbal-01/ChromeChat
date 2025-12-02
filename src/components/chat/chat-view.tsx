@@ -17,14 +17,8 @@ interface ChatViewProps {
   onClearChat: (chatId: string) => void;
   onUnfriend: (friendId: string) => void;
   allUsers: User[];
-  isBotTyping?: boolean;
 }
 
-const chromeBotUser: User = {
-    id: 'chromebot',
-    username: 'ChromeBot',
-    email: 'bot@chromebot.ai'
-};
 
 export function ChatView({ 
     currentUser, 
@@ -33,13 +27,12 @@ export function ChatView({
     onClearChat, 
     onUnfriend, 
     allUsers,
-    isBotTyping 
 }: ChatViewProps) {
   const firestore = useFirestore();
 
   const messagesQuery = useMemoFirebase(
     () =>
-      firestore && chat && chat.id !== 'chromebot'
+      firestore && chat
         ? query(
             collection(firestore, 'chats', chat.id, 'messages'),
             orderBy('timestamp', 'asc')
@@ -48,10 +41,8 @@ export function ChatView({
     [firestore, chat]
   );
   
-  const { data: firestoreMessages } = useCollection<Message>(messagesQuery);
+  const { data: messages } = useCollection<Message>(messagesQuery);
   
-  const messages = chat?.id === 'chromebot' ? chat.messages : firestoreMessages;
-
   if (!chat) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 bg-background">
@@ -68,9 +59,7 @@ export function ChatView({
   }
 
   const partnerId = chat.participantIds.find(id => id !== currentUser.id);
-  const partner = chat.id === 'chromebot' 
-    ? chromeBotUser 
-    : allUsers.find(u => u.id === partnerId);
+  const partner = allUsers.find(u => u.id === partnerId);
 
 
   if (!partner) {
@@ -83,13 +72,10 @@ export function ChatView({
         partner={partner}
         onClearChat={() => onClearChat(chat.id)}
         onUnfriend={() => onUnfriend(partner.id)}
-        isBot={chat.id === 'chromebot'}
       />
       <MessageList 
         messages={messages || []} 
         currentUserId={currentUser.id} 
-        isBotTyping={isBotTyping}
-        botUser={chromeBotUser}
         />
       <MessageInput onSendMessage={onSendMessage} />
     </div>

@@ -14,7 +14,6 @@ import {
   addDoc,
   increment,
   updateDoc,
-  Timestamp,
 } from 'firebase/firestore';
 import { SidebarInset, useSidebar } from '@/components/ui/sidebar';
 import { AppSidebar } from './app-sidebar';
@@ -27,7 +26,6 @@ import {
   useFirestore,
   useUser,
 } from '@/firebase';
-import { chatWithChromeBot, type ChatInput } from '@/ai/flows/chatbot-flow';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 
@@ -37,8 +35,6 @@ export function ChatLayout() {
   const firestore = useFirestore();
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const { setOpenMobile, isMobile } = useSidebar();
-  const [chromeBotMessages, setChromeBotMessages] = useState<Message[]>([]);
-  const [isBotTyping, setIsBotTyping] = useState(false);
 
   const handleLogoClick = () => {
     setSelectedChatId(null);
@@ -67,15 +63,8 @@ export function ChatLayout() {
 
   const selectedChat = useMemo(() => {
     if (!selectedChatId) return null;
-    if (selectedChatId === 'chromebot') {
-      return {
-        id: 'chromebot',
-        participantIds: [user?.uid || '', 'chromebot'],
-        messages: chromeBotMessages,
-      };
-    }
     return chats?.find((c) => c.id === selectedChatId) || null;
-  }, [selectedChatId, chats, user, chromeBotMessages]);
+  }, [selectedChatId, chats]);
 
   const handleSelectChat = async (chatId: string) => {
     setSelectedChatId(chatId);
@@ -83,7 +72,7 @@ export function ChatLayout() {
       setOpenMobile(false);
     }
 
-    if (chatId !== 'chromebot' && user && firestore) {
+    if (user && firestore) {
       const chatDocRef = doc(firestore, 'chats', chatId);
       const unreadCountKey = `unreadCount.${user.uid}`;
       try {
@@ -97,59 +86,7 @@ export function ChatLayout() {
   };
 
   const handleSendMessage = async (text: string) => {
-    if (!selectedChatId || !user || !firestore) return;
-
-    if (selectedChatId === 'chromebot') {
-      const newUserMessage: Message = {
-        id: `user-${Date.now()}`,
-        chatId: 'chromebot',
-        senderId: user.uid,
-        text,
-        timestamp: Timestamp.now(),
-        read: true,
-      };
-      setChromeBotMessages((prev) => [...prev, newUserMessage]);
-      setIsBotTyping(true);
-
-      const chatHistoryForBot: ChatInput['history'] = [
-        ...chromeBotMessages,
-        newUserMessage,
-      ].map((msg) => ({
-        role: msg.senderId === user.uid ? 'user' : 'model',
-        content: msg.text,
-      }));
-
-      try {
-        const botResponseText = await chatWithChromeBot({
-          history: chatHistoryForBot,
-        });
-        const newBotMessage: Message = {
-          id: `bot-${Date.now()}`,
-          chatId: 'chromebot',
-          senderId: 'chromebot',
-          text: botResponseText,
-          timestamp: Timestamp.now(),
-          read: true,
-        };
-        setChromeBotMessages((prev) => [...prev, newBotMessage]);
-      } catch (error) {
-        console.error('Error with ChromeBot:', error);
-        const errorBotMessage: Message = {
-            id: `bot-error-${Date.now()}`,
-            chatId: 'chromebot',
-            senderId: 'chromebot',
-            text: "Sorry, I'm having a little trouble right now. Please try again later.",
-            timestamp: Timestamp.now(),
-            read: true,
-        };
-        setChromeBotMessages((prev) => [...prev, errorBotMessage]);
-      } finally {
-        setIsBotTyping(false);
-      }
-      return;
-    }
-
-    if (!selectedChat) return;
+    if (!selectedChatId || !user || !firestore || !selectedChat) return;
 
     const partnerId = selectedChat.participantIds.find((id) => id !== user.uid);
     if (!partnerId) return;
@@ -161,7 +98,7 @@ export function ChatLayout() {
       'messages'
     );
 
-    addDoc(messagesCol, {
+    await addDoc(messagesCol, {
       chatId: selectedChatId,
       senderId: user.uid,
       text,
@@ -171,17 +108,15 @@ export function ChatLayout() {
 
     const chatDocRef = doc(firestore, 'chats', selectedChatId);
     const unreadCountKey = `unreadCount.${partnerId}`;
-    updateDoc(chatDocRef, {
+    
+    await updateDoc(chatDocRef, {
       [unreadCountKey]: increment(1),
-    }).catch((e) => console.error('Could not update unread count', e));
+    });
   };
 
   const handleClearChat = async (chatId: string) => {
     if (!firestore) return;
-    if (chatId === 'chromebot') {
-      setChromeBotMessages([]);
-      return;
-    }
+
     const messagesQuery = query(
       collection(firestore, 'chats', chatId, 'messages')
     );
@@ -274,7 +209,6 @@ export function ChatLayout() {
           onClearChat={handleClearChat}
           onUnfriend={handleUnfriend}
           allUsers={allUsers || []}
-          isBotTyping={isBotTyping}
         />
       </SidebarInset>
     </div>
