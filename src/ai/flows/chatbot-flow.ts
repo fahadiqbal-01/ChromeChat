@@ -18,11 +18,10 @@ type ChatbotFlowOutput = z.infer<typeof ChatbotFlowOutput>;
 async function chatbotFlow(input: ChatbotFlowInput): Promise<ChatbotFlowOutput> {
   const systemPrompt = `You are ChromeBot, a helpful and friendly AI assistant integrated into a chat application. Your responses should be concise, helpful, and conversational.`;
 
+  // The entire history, including the latest user message, is now in input.history
   const messages: AiMessage[] = [
-    // Prepending the system prompt to the history.
     { role: 'system', content: systemPrompt },
     ...input.history,
-    { role: 'user', content: input.prompt },
   ];
 
   try {

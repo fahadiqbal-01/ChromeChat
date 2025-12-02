@@ -8,7 +8,7 @@ export type AiMessage = z.infer<typeof MessageSchema>;
 
 export const ChatInputSchema = z.object({
   history: z.array(MessageSchema),
-  prompt: z.string(),
+  prompt: z.string().optional(), // Make prompt optional as it's now part of history
 });
 export type ChatInput = z.infer<typeof ChatInputSchema>;
 

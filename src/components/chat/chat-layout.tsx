@@ -143,9 +143,10 @@ export function ChatLayout() {
     setAiLoading(true);
   
     try {
+      // Pass the *entire* updated history to the chatbot flow.
       const response = await chatWithChromeBot({
-        history: updatedHistory.slice(0, -1),
-        prompt: prompt,
+        history: updatedHistory,
+        prompt: '', // The prompt is now the last message in history, so this can be empty.
       });
   
       const botMessage: AiMessage = { role: 'model', content: response };
