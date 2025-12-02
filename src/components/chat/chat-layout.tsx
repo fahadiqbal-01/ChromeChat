@@ -13,6 +13,7 @@ import {
   addDoc,
   increment,
   updateDoc,
+  deleteDoc,
 } from 'firebase/firestore';
 import { SidebarInset, useSidebar } from '@/components/ui/sidebar';
 import { AppSidebar } from './app-sidebar';
@@ -24,7 +25,6 @@ import {
   useMemoFirebase,
   useFirestore,
   useUser,
-  deleteDocumentNonBlocking,
 } from '@/firebase';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { usePresence } from '@/hooks/use-presence';
@@ -61,7 +61,7 @@ export function ChatLayout() {
   );
 
   const { data: allUsers } = useCollection<User>(usersQuery);
-  const { data: chats, setData: setChats } = useCollection<Chat>(chatsQuery);
+  const { data: chats } = useCollection<Chat>(chatsQuery);
 
   const selectedChat = useMemo(() => {
     if (!selectedChatId) return null;
@@ -134,24 +134,6 @@ export function ChatLayout() {
     await batch.commit();
   };
 
-  const handleUnfriend = async (friendId: string) => {
-    if (!user || !firestore || !chats) return;
-  
-    const sortedIds = [user.uid, friendId].sort();
-    const chatIdToDelete = sortedIds.join('-');
-  
-    // Clear chat messages first
-    await handleClearChat(chatIdToDelete);
-  
-    // Then delete the chat document
-    const chatDocRef = doc(firestore, 'chats', chatIdToDelete);
-    await deleteDoc(chatDocRef);
-  
-    if (selectedChatId === chatIdToDelete) {
-      setSelectedChatId(null);
-    }
-  };
-
   const handleAddFriendAndStartChat = async (friend: User) => {
     if (!user || !firestore || user.uid === friend.id) return;
 
@@ -215,7 +197,6 @@ export function ChatLayout() {
           chat={selectedChat}
           onSendMessage={handleSendMessage}
           onClearChat={handleClearChat}
-          onUnfriend={handleUnfriend}
           allUsers={allUsers}
         />
       </SidebarInset>

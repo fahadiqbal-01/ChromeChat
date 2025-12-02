@@ -1,6 +1,6 @@
 'use client';
 
-import { MoreVertical, Trash2, UserX } from 'lucide-react';
+import { MoreVertical, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -11,17 +11,15 @@ import {
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import type { User } from '@/lib/types';
 import { Avatar, AvatarFallback } from '../ui/avatar';
-import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import type { Timestamp } from 'firebase/firestore';
 
 interface ChatHeaderProps {
   partner: User;
   onClearChat: () => void;
-  onUnfriend: () => void;
 }
 
-export function ChatHeader({ partner, onClearChat, onUnfriend }: ChatHeaderProps) {
+export function ChatHeader({ partner, onClearChat }: ChatHeaderProps) {
   const toDate = (timestamp?: Timestamp): Date | null => {
     if (!timestamp) return null;
     return timestamp.toDate();
@@ -61,10 +59,6 @@ export function ChatHeader({ partner, onClearChat, onUnfriend }: ChatHeaderProps
           <DropdownMenuItem onClick={onClearChat} className="text-destructive">
             <Trash2 className="mr-2 h-4 w-4" />
             <span>Clear Chat</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={onUnfriend} className="text-destructive">
-            <UserX className="mr-2 h-4 w-4" />
-            <span>Unfriend</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

@@ -15,7 +15,6 @@ interface ChatViewProps {
   chat: ChatType | null;
   onSendMessage: (text: string) => void;
   onClearChat: (chatId: string) => void;
-  onUnfriend: (friendId: string) => void;
   allUsers: User[];
 }
 
@@ -25,7 +24,6 @@ export function ChatView({
     chat, 
     onSendMessage, 
     onClearChat, 
-    onUnfriend, 
     allUsers,
 }: ChatViewProps) {
   const firestore = useFirestore();
@@ -71,7 +69,6 @@ export function ChatView({
       <ChatHeader 
           partner={partner}
           onClearChat={() => onClearChat(chat.id)}
-          onUnfriend={() => onUnfriend(partner.id)}
         />
       <MessageList 
         messages={messages || []} 
