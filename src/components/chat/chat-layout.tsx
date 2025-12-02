@@ -10,6 +10,7 @@ import {
   doc,
   getDoc,
   writeBatch,
+  deleteDoc,
 } from 'firebase/firestore';
 import { SidebarInset, useSidebar } from '@/components/ui/sidebar';
 import { AppSidebar } from './app-sidebar';
@@ -22,7 +23,6 @@ import {
   useFirestore,
   useUser,
   addDocumentNonBlocking,
-  deleteDocumentNonBlocking,
   FirestorePermissionError,
   errorEmitter,
   setDocumentNonBlocking,
@@ -118,10 +118,8 @@ export function ChatLayout() {
       await handleClearChat(chatIdToDelete);
       
       const chatDocRef = doc(firestore, 'chats', chatIdToDelete);
-      // Use a standard delete for this operation with proper error handling
       await deleteDoc(chatDocRef);
       
-      // Finally, reset the UI
       if (selectedChatId === chatIdToDelete) {
         setSelectedChatId(null);
       }
@@ -156,7 +154,6 @@ export function ChatLayout() {
           participantIds: sortedIds,
           createdAt: serverTimestamp(),
         };
-        // Use setDocumentNonBlocking for optimistic UI, it has error handling built-in
         setDocumentNonBlocking(chatDocRef, newChatData, { merge: false });
         setSelectedChatId(newChatId);
       }

@@ -6,30 +6,19 @@ import {
 } from '@/firebase';
 import {
   createUserWithEmailAndPassword,
-  setPersistence,
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
-  browserLocalPersistence,
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect } from 'react';
-import { FirebaseError } from 'firebase/app';
+import { useCallback } from 'react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 export const useAuth = () => {
   const auth = useFirebaseAuth();
   const firestore = useFirestore();
   const router = useRouter();
-
-  useEffect(() => {
-    if (auth) {
-      setPersistence(auth, browserLocalPersistence).catch((error) => {
-        console.error("Failed to set auth persistence", error);
-      });
-    }
-  }, [auth]);
 
   const signup = useCallback(
     async (username: string, email: string, password: string) => {
@@ -54,7 +43,7 @@ export const useAuth = () => {
       const userDocRef = doc(firestore, 'users', newUser.uid);
       
       // Use the non-blocking version with proper error handling
-      setDocumentNonBlocking(userDocRef, userProfile, {});
+      setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
       
       return newUser;
     },
