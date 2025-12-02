@@ -20,23 +20,18 @@ const chatbotFlow = ai.defineFlow(
     outputSchema: ChatOutputSchema,
   },
   async (input) => {
-    const prompt = `You are ChromeBot, a helpful and friendly AI assistant integrated into a chat application.
+    const systemPrompt = `You are ChromeBot, a helpful and friendly AI assistant integrated into a chat application. Your responses should be concise, helpful, and conversational.`;
 
-Your responses should be concise, helpful, and conversational.
-
-Here is the conversation history:
-{{#each history}}
-- {{role}}: {{content}}
-{{/each}}
-New user message: {{history[history.length-1].content}}
-`;
-
-    const { output } = await ai.generate({
-      prompt: prompt,
-      history: input.history.map((m) => ({
+    const history = [
+      { role: 'system' as const, content: [{ text: systemPrompt }] },
+      ...input.history.map((m) => ({
         role: m.role,
         content: [{ text: m.content }],
       })),
+    ];
+
+    const { output } = await ai.generate({
+      history,
     });
 
     return output?.text() || "I'm sorry, I couldn't generate a response.";
