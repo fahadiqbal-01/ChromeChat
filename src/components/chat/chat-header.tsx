@@ -28,7 +28,7 @@ export function ChatHeader({ partner, onClearChat }: ChatHeaderProps) {
   const lastSeenDate = toDate(partner.lastSeen);
 
   return (
-    <header className="flex h-20 md:h-16 items-center justify-between border-b bg-background px-4">
+    <header className="flex h-20 md:h-16 items-center justify-between border-b bg-background px-4 pb-2 md:pb-0">
       <div className="flex items-center gap-3">
         <SidebarTrigger className="md:hidden" />
         <Avatar className="h-10 w-10 md:h-8 md:w-8">
