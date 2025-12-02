@@ -50,7 +50,7 @@ export function ChatView({
         </div>
         <div className="flex flex-col items-center gap-2 text-center">
             <Logo className="mb-2" />
-            <h2 className="text-2xl font-bold tracking-tight">Welcome to EverChat</h2>
+            <h2 className="text-2xl font-bold tracking-tight">Welcome to Frensy</h2>
             <p className="text-muted-foreground">Select a friend to start a conversation.</p>
         </div>
       </div>
