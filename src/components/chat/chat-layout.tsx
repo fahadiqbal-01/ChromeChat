@@ -101,14 +101,32 @@ export function ChatLayout() {
   
     if (user && firestore) {
       const chatDocRef = doc(firestore, 'chats', chatId);
-      const unreadCountKey = `unreadCount.${user.uid}`;
-      updateDocumentNonBlocking(chatDocRef, {
-        [unreadCountKey]: 0,
-      });
-
-      // Track currently open chat for presence
       const userDocRef = doc(firestore, 'users', user.uid);
-      updateDocumentNonBlocking(userDocRef, { activeChatId: chatId });
+  
+      // Use a write batch to perform atomic updates
+      const batch = writeBatch(firestore);
+      
+      // Reset the unread count for the current user in this chat
+      batch.update(chatDocRef, {
+        [`unreadCount.${user.uid}`]: 0
+      });
+  
+      // Track the currently open chat for presence
+      batch.update(userDocRef, { activeChatId: chatId });
+  
+      // Commit the batch
+      await batch.commit().catch(error => {
+        const permissionError = new FirestorePermissionError({
+          path: `chats/${chatId} or users/${user.uid}`,
+          operation: 'update',
+          requestResourceData: {
+            description: 'Failed to update chat state on selection.',
+            unreadCountReset: { [`unreadCount.${user.uid}`]: 0 },
+            activeChatUpdate: { activeChatId: chatId },
+          },
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
     }
   };
 
@@ -139,15 +157,22 @@ export function ChatLayout() {
     
     // Check partner's presence to decide whether to increment unread count
     const partnerUserDocRef = doc(firestore, 'users', partnerId);
-    const partnerDoc = await getDoc(partnerUserDocRef);
-    const partnerData = partnerDoc.data() as User;
+    try {
+      const partnerDoc = await getDoc(partnerUserDocRef);
+      const partnerData = partnerDoc.data() as User;
 
-    // Only increment if the partner is not online OR is online but not in this chat
-    if (!partnerData?.isActive || partnerData?.activeChatId !== selectedChatId) {
-      const unreadCountKey = `unreadCount.${partnerId}`;
-      updateDocumentNonBlocking(chatDocRef, {
-        [unreadCountKey]: increment(1),
-      });
+      // Only increment if the partner is not online OR is online but not in this chat
+      if (!partnerData?.isActive || partnerData?.activeChatId !== selectedChatId) {
+        updateDocumentNonBlocking(chatDocRef, {
+          [`unreadCount.${partnerId}`]: increment(1),
+        });
+      }
+    } catch (e) {
+      // If we can't get the partner's doc, we can assume they are offline
+      // and increment the unread count.
+       updateDocumentNonBlocking(chatDocRef, {
+          [`unreadCount.${partnerId}`]: increment(1),
+        });
     }
   };
 
