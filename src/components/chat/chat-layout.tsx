@@ -135,19 +135,19 @@ export function ChatLayout() {
 
   const handleSendAiMessage = async (prompt: string) => {
     if (!prompt) return;
-
+  
     const newUserMessage: AiMessage = { role: 'user', content: prompt };
     const newHistory: AiMessage[] = [...aiChatHistory, newUserMessage];
-    
+  
     setAiChatHistory(newHistory);
     setAiLoading(true);
-
+  
     try {
       const response = await chatWithChromeBot({
-        history: newHistory.slice(0, -1),
+        history: aiChatHistory, // Pass the history BEFORE the new user message
         prompt,
       });
-
+  
       const botMessage: AiMessage = { role: 'model', content: response };
       setAiChatHistory((prevHistory) => [...prevHistory, botMessage]);
     } catch (error) {
