@@ -46,7 +46,7 @@ export function MessageList({ messages, currentUserId, partner, isPartnerTyping 
               })}
             >
               {!isCurrentUser && (
-                <Avatar className="h-8 w-8 self-end md:h-6 md:w-6">
+                <Avatar className="h-9 w-9 self-end md:h-6 md:w-6">
                     <AvatarFallback>
                         {partner.username.charAt(0).toUpperCase()}
                     </AvatarFallback>
@@ -54,7 +54,7 @@ export function MessageList({ messages, currentUserId, partner, isPartnerTyping 
               )}
               <div
                 className={cn(
-                  'max-w-[60%] rounded-lg px-3 py-2 md:max-w-[60%]',
+                  'max-w-[45%] rounded-lg px-3 py-2 md:max-w-[60%]',
                   {
                     'bg-primary text-primary-foreground': isCurrentUser,
                     'bg-muted': !isCurrentUser,
@@ -73,7 +73,7 @@ export function MessageList({ messages, currentUserId, partner, isPartnerTyping 
         })}
         {isPartnerTyping && (
            <div className="flex items-end gap-2 justify-start">
-             <Avatar className="h-8 w-8 md:h-6 md:w-6">
+             <Avatar className="h-9 w-9 md:h-6 md:w-6">
                 <AvatarFallback>
                     {partner.username.charAt(0).toUpperCase()}
                 </AvatarFallback>
