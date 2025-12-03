@@ -29,8 +29,10 @@ export function ChatHeader({ partner, onClearChat }: ChatHeaderProps) {
   const lastSeenDate = toDate(partner.lastSeen);
 
   return (
-    <header className="flex h-14 items-center justify-between border-b bg-background px-2 md:px-4">
+    <header className="flex h-14 items-center justify-between border-b bg-background px-2 md:px-4 shrink-0">
       <div className="flex items-center gap-2">
+        <div className="md:hidden">
+        </div>
         <Avatar className="h-8 w-8">
             <AvatarFallback>
                 {partner.username.charAt(0).toUpperCase()}
@@ -49,7 +51,7 @@ export function ChatHeader({ partner, onClearChat }: ChatHeaderProps) {
           )}
         </div>
       </div>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -63,7 +65,9 @@ export function ChatHeader({ partner, onClearChat }: ChatHeaderProps) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <SidebarTrigger />
+        <div className="md:hidden">
+         <SidebarTrigger />
+        </div>
       </div>
     </header>
   );
