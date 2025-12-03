@@ -29,8 +29,9 @@ export function ChatHeader({ partner, onClearChat }: ChatHeaderProps) {
   const lastSeenDate = toDate(partner.lastSeen);
 
   return (
-    <header className="flex h-14 items-center justify-between border-b bg-background px-4">
-      <div className="flex items-center gap-3">
+    <header className="flex h-14 items-center justify-between border-b bg-background px-2 md:px-4">
+      <div className="flex items-center gap-2">
+        <SidebarTrigger className="md:hidden" />
         <Avatar className="h-8 w-8">
             <AvatarFallback>
                 {partner.username.charAt(0).toUpperCase()}
@@ -39,10 +40,10 @@ export function ChatHeader({ partner, onClearChat }: ChatHeaderProps) {
         <div className="flex flex-col">
           <h2 className="font-semibold text-base">{partner.username}</h2>
           {partner.isActive ? (
-            <p className="text-sm text-green-500">Online</p>
+            <p className="text-xs text-green-500">Online</p>
           ) : (
             lastSeenDate && (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Last seen {formatDistanceToNow(lastSeenDate, { addSuffix: true })}
               </p>
             )
@@ -63,7 +64,7 @@ export function ChatHeader({ partner, onClearChat }: ChatHeaderProps) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <SidebarTrigger />
+        <SidebarTrigger className="hidden md:flex" />
       </div>
     </header>
   );
