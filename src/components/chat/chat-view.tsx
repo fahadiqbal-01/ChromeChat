@@ -45,7 +45,7 @@ export function ChatView({
   if (!chat) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 bg-background">
-        <div className="absolute left-4 top-4">
+        <div className="absolute right-4 top-4">
           <SidebarTrigger />
         </div>
         <div className="flex flex-col items-center gap-2 text-center">
@@ -64,7 +64,7 @@ export function ChatView({
   if (!partner) {
      return (
       <div className="flex h-full flex-col items-center justify-center gap-4 bg-background">
-        <div className="absolute left-4 top-4">
+        <div className="absolute right-4 top-4">
           <SidebarTrigger />
         </div>
         <p>This user no longer exists.</p>
