@@ -29,7 +29,7 @@ export function ChatHeader({ partner, onClearChat }: ChatHeaderProps) {
   const lastSeenDate = toDate(partner.lastSeen);
 
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-background px-4">
+    <header className="flex h-14 items-center justify-between border-b bg-background px-4">
       <div className="flex items-center gap-3">
         <Avatar className="h-8 w-8">
             <AvatarFallback>
@@ -37,7 +37,7 @@ export function ChatHeader({ partner, onClearChat }: ChatHeaderProps) {
             </AvatarFallback>
         </Avatar>
         <div className="flex flex-col">
-          <h2 className="text-lg font-semibold">{partner.username}</h2>
+          <h2 className="font-semibold text-base">{partner.username}</h2>
           {partner.isActive ? (
             <p className="text-xs text-green-500">Online</p>
           ) : (
@@ -49,7 +49,7 @@ export function ChatHeader({ partner, onClearChat }: ChatHeaderProps) {
           )}
         </div>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -57,7 +57,7 @@ export function ChatHeader({ partner, onClearChat }: ChatHeaderProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={onClearChat} className="text-destructive text-sm">
+            <DropdownMenuItem onClick={onClearChat} className="text-destructive">
               <Trash2 className="mr-2 h-4 w-4" />
               <span>Clear Chat</span>
             </DropdownMenuItem>

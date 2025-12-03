@@ -47,7 +47,7 @@ export function ChatView({
   if (!chat) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 bg-background">
-         <div className="absolute right-4 top-4">
+        <div className="absolute right-4 top-4">
           <SidebarTrigger />
         </div>
         <div className="flex flex-col items-center gap-2 text-center">
@@ -77,7 +77,7 @@ export function ChatView({
   const isPartnerTyping = chat.typing?.[partner.id] ?? false;
 
   return (
-    <div className="flex h-screen flex-col bg-card">
+    <div className="flex h-svh flex-col bg-card">
       <ChatHeader 
           partner={partner}
           onClearChat={() => onClearChat(chat.id)}
@@ -92,5 +92,3 @@ export function ChatView({
     </div>
   );
 }
-
-    

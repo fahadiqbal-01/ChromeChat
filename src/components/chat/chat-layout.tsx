@@ -211,9 +211,8 @@ export function ChatLayout() {
  const handleAcceptRequest = async (request: FriendRequest) => {
     if (!user || !firestore) return;
 
-
     const batch = writeBatch(firestore);
-    const { requesterId, recipientId } = request;
+    const { requesterId, recipientId, id: requestId } = request;
 
     // 1. Create a new chat document
     const sortedIds = [requesterId, recipientId].sort();
@@ -239,13 +238,7 @@ export function ChatLayout() {
     batch.update(requesterUserRef, { friendIds: arrayUnion(recipientId) });
 
     // 3. Delete the friend request
-    const requestDocRef = doc(
-      firestore,
-      'users',
-      recipientId,
-      'friendRequests',
-      request.id
-    );
+    const requestDocRef = doc(firestore, 'users', recipientId, 'friendRequests', requestId);
     batch.delete(requestDocRef);
 
     try {
@@ -253,10 +246,10 @@ export function ChatLayout() {
       setSelectedChatId(newChatId);
     } catch (error) {
        const permissionError = new FirestorePermissionError({
-        path: `batch operation for accepting friend request`,
+        path: `chats/${newChatId} and users/${requesterId} and users/${recipientId}`,
         operation: 'write',
         requestResourceData: {
-            description: "Accept friend request, create chat, update users",
+            description: "Failed to accept friend request: creating chat, updating user friend lists, and deleting request.",
         },
       });
       errorEmitter.emit('permission-error', permissionError);
@@ -271,7 +264,7 @@ export function ChatLayout() {
 
   if (!user || !allUsers) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
+      <div className="flex h-svh w-full items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <p>Loading...</p>
         </div>
@@ -295,7 +288,7 @@ export function ChatLayout() {
     // .filter(chat => chat.partner);
 
   return (
-    <div className="flex h-screen w-full">
+    <div className="flex h-svh w-full">
       <AppSidebar
         user={currentUser}
         chats={chatsWithPartners}
@@ -337,9 +330,3 @@ export function ChatLayout() {
     </div>
   );
 }
-
-    
-
-    
-
-    
