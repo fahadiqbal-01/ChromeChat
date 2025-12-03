@@ -264,7 +264,7 @@ export function ChatLayout() {
 
   if (!user || !allUsers) {
     return (
-      <div className="flex h-svh w-full items-center justify-center bg-background">
+      <div className="flex h-full w-full items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <p>Loading...</p>
         </div>
@@ -288,7 +288,7 @@ export function ChatLayout() {
     // .filter(chat => chat.partner);
 
   return (
-    <div className="flex h-svh w-full bg-background">
+    <div className="flex h-full w-full bg-background">
       <AppSidebar
         user={currentUser}
         chats={chatsWithPartners}

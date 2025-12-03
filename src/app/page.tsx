@@ -32,8 +32,10 @@ export default function HomePage() {
   }
 
   return (
-    <SidebarProvider defaultOpen={false}>
-      <ChatLayout />
-    </SidebarProvider>
+    <main className="h-svh">
+      <SidebarProvider defaultOpen={false}>
+        <ChatLayout />
+      </SidebarProvider>
+    </main>
   );
 }
