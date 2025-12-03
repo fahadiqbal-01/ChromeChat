@@ -17,6 +17,7 @@ interface ChatViewProps {
   onSendMessage: (text: string) => void;
   onClearChat: (chatId: string) => void;
   allUsers: User[];
+  onTypingChange: (isTyping: boolean) => void;
 }
 
 
@@ -26,6 +27,7 @@ export function ChatView({
     onSendMessage, 
     onClearChat, 
     allUsers,
+    onTypingChange
 }: ChatViewProps) {
   const firestore = useFirestore();
 
@@ -45,7 +47,7 @@ export function ChatView({
   if (!chat) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 bg-background">
-        <div className="absolute right-4 top-4">
+         <div className="absolute right-4 top-4">
           <SidebarTrigger />
         </div>
         <div className="flex flex-col items-center gap-2 text-center">
@@ -72,6 +74,8 @@ export function ChatView({
      )
   }
 
+  const isPartnerTyping = chat.typing?.[partner.id] ?? false;
+
   return (
     <div className="flex h-screen flex-col bg-card">
       <ChatHeader 
@@ -82,8 +86,11 @@ export function ChatView({
         messages={messages || []} 
         currentUserId={currentUser.id}
         partner={partner}
+        isPartnerTyping={isPartnerTyping}
       />
-      <MessageInput onSendMessage={onSendMessage} />
+      <MessageInput onSendMessage={onSendMessage} onTypingChange={onTypingChange} />
     </div>
   );
 }
+
+    

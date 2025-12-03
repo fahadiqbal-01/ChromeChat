@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -7,6 +8,7 @@ import { SendHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
+import { useEffect, useRef } from 'react';
 
 const formSchema = z.object({
   message: z.string().min(1, 'Message cannot be empty.'),
@@ -14,9 +16,10 @@ const formSchema = z.object({
 
 interface MessageInputProps {
   onSendMessage: (text: string) => void;
+  onTypingChange: (isTyping: boolean) => void;
 }
 
-export function MessageInput({ onSendMessage }: MessageInputProps) {
+export function MessageInput({ onSendMessage, onTypingChange }: MessageInputProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -24,9 +27,39 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
     },
   });
 
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const { watch, reset } = form;
+  const messageValue = watch('message');
+
+  useEffect(() => {
+    onTypingChange(messageValue.length > 0);
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    if (messageValue.length > 0) {
+      typingTimeoutRef.current = setTimeout(() => {
+        onTypingChange(false);
+      }, 3000); // 3 seconds timeout
+    }
+
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, [messageValue, onTypingChange]);
+
+
   function onSubmit(values: z.infer<typeof formSchema>) {
     onSendMessage(values.message);
-    form.reset();
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    onTypingChange(false);
+    reset();
   }
 
   return (
@@ -67,3 +100,5 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
     </div>
   );
 }
+
+    

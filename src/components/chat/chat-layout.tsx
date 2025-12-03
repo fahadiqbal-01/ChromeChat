@@ -163,6 +163,15 @@ export function ChatLayout() {
     }
   };
 
+  const handleTypingChange = (isTyping: boolean) => {
+    if (!selectedChatId || !user || !firestore) return;
+
+    const chatDocRef = doc(firestore, 'chats', selectedChatId);
+    updateDocumentNonBlocking(chatDocRef, {
+      [`typing.${user.uid}`]: isTyping,
+    });
+  };
+
   const promptClearChat = (chatId: string) => {
     setChatToClear(chatId);
   };
@@ -217,16 +226,17 @@ export function ChatLayout() {
         [requesterId]: 0,
         [recipientId]: 0,
       },
+      typing: {
+        [requesterId]: false,
+        [recipientId]: false,
+      },
     });
 
-    // 2. Add the requester to the current user's (recipient's) friend list
+    // 2. Add each user to the other's friend list
     const recipientUserRef = doc(firestore, 'users', recipientId);
     batch.update(recipientUserRef, { friendIds: arrayUnion(requesterId) });
-
-    // This part is removed because the client cannot write to another user's document.
-    // The requester will add the recipient to their own friend list in a separate action.
-    // const requesterUserRef = doc(firestore, 'users', requesterId);
-    // batch.update(requesterUserRef, { friendIds: arrayUnion(recipientId) });
+    const requesterUserRef = doc(firestore, 'users', requesterId);
+    batch.update(requesterUserRef, { friendIds: arrayUnion(recipientId) });
 
     // 3. Delete the friend request
     const requestDocRef = doc(
@@ -238,28 +248,19 @@ export function ChatLayout() {
     );
     batch.delete(requestDocRef);
 
-    batch
-      .commit()
-      .then(() => {
-        setSelectedChatId(newChatId);
-      })
-      .catch((error) => {
-        const permissionError = new FirestorePermissionError({
-          path: `users/${user.uid} or chats/${newChatId}`,
-          operation: 'write',
-          requestResourceData: {
-            description:
-              'Batch operation to accept friend request failed. Check permissions for creating a chat, updating user profiles (friendIds), and deleting a friend request.',
-            chatData: {
-                id: newChatId,
-                participantIds: sortedIds,
-            },
-            currentUserUpdate: { friendIds: `arrayUnion(${requesterId})` },
-            deletedRequestPath: requestDocRef.path,
-          },
-        });
-        errorEmitter.emit('permission-error', permissionError);
+    try {
+      await batch.commit();
+      setSelectedChatId(newChatId);
+    } catch (error) {
+       const permissionError = new FirestorePermissionError({
+        path: `batch operation for accepting friend request`,
+        operation: 'write',
+        requestResourceData: {
+            description: "Accept friend request, create chat, update users",
+        },
       });
+      errorEmitter.emit('permission-error', permissionError);
+    }
   };
   
   const handleRejectRequest = async (request: FriendRequest) => {
@@ -315,6 +316,7 @@ export function ChatLayout() {
           onSendMessage={handleSendMessage}
           onClearChat={promptClearChat}
           allUsers={existingUsers}
+          onTypingChange={handleTypingChange}
         />
       </SidebarInset>
        <AlertDialog open={!!chatToClear} onOpenChange={(open) => !open && setChatToClear(null)}>
@@ -335,6 +337,8 @@ export function ChatLayout() {
     </div>
   );
 }
+
+    
 
     
 

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useRef } from 'react';
@@ -6,21 +7,23 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
 import { Avatar, AvatarFallback } from '../ui/avatar';
+import { TypingIndicator } from './typing-indicator';
 
 interface MessageListProps {
   messages: Message[];
   currentUserId: string;
   partner: User;
+  isPartnerTyping: boolean;
 }
 
-export function MessageList({ messages, currentUserId, partner }: MessageListProps) {
+export function MessageList({ messages, currentUserId, partner, isPartnerTyping }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, isPartnerTyping]);
 
   const toDate = (timestamp: Timestamp | number | Date): Date => {
     if (timestamp instanceof Timestamp) {
@@ -43,7 +46,7 @@ export function MessageList({ messages, currentUserId, partner }: MessageListPro
               })}
             >
               {!isCurrentUser && (
-                <Avatar className="h-8 w-8 md:h-6 md:w-6">
+                <Avatar className="h-8 w-8 md:h-6 md:w-6 self-end">
                     <AvatarFallback>
                         {partner.username.charAt(0).toUpperCase()}
                     </AvatarFallback>
@@ -68,7 +71,21 @@ export function MessageList({ messages, currentUserId, partner }: MessageListPro
             </div>
           );
         })}
+        {isPartnerTyping && (
+           <div className="flex items-end gap-2 justify-start">
+             <Avatar className="h-8 w-8 md:h-6 md:w-6">
+                <AvatarFallback>
+                    {partner.username.charAt(0).toUpperCase()}
+                </AvatarFallback>
+             </Avatar>
+             <div className="bg-muted rounded-lg px-4 py-3 md:px-3 md:py-2">
+                <TypingIndicator />
+             </div>
+           </div>
+        )}
       </div>
     </div>
   );
 }
+
+    
