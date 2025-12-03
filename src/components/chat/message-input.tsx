@@ -63,11 +63,11 @@ export function MessageInput({ onSendMessage, onTypingChange }: MessageInputProp
   }
 
   return (
-    <div className="border-t bg-background p-4 md:px-4 md:py-2">
+    <div className="border-t bg-background p-4 md:px-4 md:py-2 ">
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 2xl:mb-0 xl:mb-0 lg:mb-0 md:mb-0 mb-6 "
         >
           <FormField
             control={form.control}

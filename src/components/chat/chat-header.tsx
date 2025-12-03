@@ -31,7 +31,6 @@ export function ChatHeader({ partner, onClearChat }: ChatHeaderProps) {
   return (
     <header className="flex h-14 items-center justify-between border-b bg-background px-2 md:px-4">
       <div className="flex items-center gap-2">
-        <SidebarTrigger className="md:hidden" />
         <Avatar className="h-8 w-8">
             <AvatarFallback>
                 {partner.username.charAt(0).toUpperCase()}
@@ -64,7 +63,7 @@ export function ChatHeader({ partner, onClearChat }: ChatHeaderProps) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <SidebarTrigger className="hidden md:flex" />
+        <SidebarTrigger />
       </div>
     </header>
   );
