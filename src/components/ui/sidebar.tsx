@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -273,7 +274,7 @@ const SidebarTrigger = React.forwardRef<
       data-sidebar="trigger"
       variant="ghost"
       size="icon"
-      className={cn("h-14 w-14 md:h-14 md:w-14", className)}
+      className={cn("h-10 w-10 md:h-10 md:w-10", className)}
       onClick={(event) => {
         onClick?.(event)
         toggleSidebar()
@@ -481,7 +482,7 @@ const SidebarGroupContent = React.forwardRef<
   <div
     ref={ref}
     data-sidebar="group-content"
-    className={cn("w-full text-base md:text-sm", className)}
+    className={cn("w-full text-sm", className)}
     {...props}
   />
 ))
@@ -523,8 +524,8 @@ const sidebarMenuButtonVariants = cva(
           "bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]",
       },
       size: {
-        default: "h-10 md:h-8 text-base md:text-sm",
-        sm: "h-8 md:h-7 text-sm md:text-xs",
+        default: "h-8 text-sm",
+        sm: "h-7 text-xs",
         lg: "h-12 text-sm group-data-[collapsible=icon]:!p-0",
       },
     },

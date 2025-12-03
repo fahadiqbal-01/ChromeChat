@@ -63,7 +63,7 @@ export function MessageInput({ onSendMessage, onTypingChange }: MessageInputProp
   }
 
   return (
-    <div className="border-t bg-background p-4">
+    <div className="border-t bg-background p-2">
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -92,7 +92,7 @@ export function MessageInput({ onSendMessage, onTypingChange }: MessageInputProp
             )}
           />
           <Button type="submit" size="icon" disabled={form.formState.isSubmitting || !form.formState.isValid}>
-            <SendHorizontal className="h-6 w-6 md:h-5 md:w-5" />
+            <SendHorizontal className="h-5 w-5" />
             <span className="sr-only">Send Message</span>
           </Button>
         </form>
@@ -100,5 +100,3 @@ export function MessageInput({ onSendMessage, onTypingChange }: MessageInputProp
     </div>
   );
 }
-
-    

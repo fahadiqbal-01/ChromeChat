@@ -104,9 +104,9 @@ export function AppSidebar({
             state === 'collapsed' ? 'flex-col' : ''
           }`}
         >
-          <UserIcon className="h-10 w-10 md:h-8 md:w-8 rounded-full bg-muted p-1.5" />
+          <UserIcon className="h-8 w-8 rounded-full bg-muted p-1.5" />
           <div className={`flex-1 overflow-hidden ${state === 'expanded' ? 'flex justify-between items-center' : 'text-center'}`}>
-            <p className="truncate font-semibold text-base md:text-sm">{user.username}</p>
+            <p className="truncate font-semibold text-sm">{user.username}</p>
             {state === 'expanded' && (
               <Button variant="ghost" size="icon" onClick={toggleSidebar} className="md:hidden">
                   <X className="h-6 w-6" />
@@ -134,7 +134,7 @@ export function AppSidebar({
             <SidebarMenu>
               {searchResults.map((foundUser) => (
                 <SidebarMenuItem key={foundUser.id}>
-                    <div className="flex w-full items-center justify-between p-2 text-base md:text-sm">
+                    <div className="flex w-full items-center justify-between p-2 text-sm">
                         <span>{foundUser.username}</span>
                         <Button size="sm" variant="outline" onClick={() => handleAddClick(foundUser)}>Add</Button>
                     </div>
@@ -176,8 +176,8 @@ export function AppSidebar({
                     className="justify-start w-full relative"
                   >
                     <div className="relative">
-                      <Avatar className="h-8 w-8 md:h-6 md:w-6">
-                        <AvatarFallback className="text-sm md:text-xs">
+                      <Avatar className="h-6 w-6">
+                        <AvatarFallback className="text-xs">
                           {username.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
@@ -204,7 +204,7 @@ export function AppSidebar({
               state === 'collapsed' ? 'justify-center p-2' : ''
             }`}
           >
-            <LogOut className="h-6 w-6 md:h-5 md:w-5" />
+            <LogOut className="h-5 w-5" />
             {state === 'expanded' && 'Logout'}
           </Button>
       </SidebarFooter>

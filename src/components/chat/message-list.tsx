@@ -46,7 +46,7 @@ export function MessageList({ messages, currentUserId, partner, isPartnerTyping 
               })}
             >
               {!isCurrentUser && (
-                <Avatar className="h-8 w-8 md:h-6 md:w-6 self-end">
+                <Avatar className="h-6 w-6 self-end">
                     <AvatarFallback>
                         {partner.username.charAt(0).toUpperCase()}
                     </AvatarFallback>
@@ -54,16 +54,16 @@ export function MessageList({ messages, currentUserId, partner, isPartnerTyping 
               )}
               <div
                 className={cn(
-                  'max-w-xs rounded-lg px-4 py-3 md:px-3 md:py-2 md:max-w-md',
+                  'max-w-xs rounded-lg px-3 py-2 md:max-w-md',
                   {
                     'bg-primary text-primary-foreground': isCurrentUser,
                     'bg-muted': !isCurrentUser,
                   }
                 )}
               >
-                <p className="text-base md:text-sm">{message.text}</p>
+                <p className="text-sm">{message.text}</p>
                 {message.timestamp && (
-                  <p className={cn("text-sm md:text-xs mt-1", isCurrentUser ? "text-primary-foreground/70" : "text-muted-foreground/70")}>
+                  <p className={cn("text-xs mt-1", isCurrentUser ? "text-primary-foreground/70" : "text-muted-foreground/70")}>
                     {format(toDate(message.timestamp), 'p')}
                   </p>
                 )}
@@ -73,12 +73,12 @@ export function MessageList({ messages, currentUserId, partner, isPartnerTyping 
         })}
         {isPartnerTyping && (
            <div className="flex items-end gap-2 justify-start">
-             <Avatar className="h-8 w-8 md:h-6 md:w-6">
+             <Avatar className="h-6 w-6">
                 <AvatarFallback>
                     {partner.username.charAt(0).toUpperCase()}
                 </AvatarFallback>
              </Avatar>
-             <div className="bg-muted rounded-lg px-4 py-3 md:px-3 md:py-2">
+             <div className="bg-muted rounded-lg px-3 py-2">
                 <TypingIndicator />
              </div>
            </div>
@@ -87,5 +87,3 @@ export function MessageList({ messages, currentUserId, partner, isPartnerTyping 
     </div>
   );
 }
-
-    
