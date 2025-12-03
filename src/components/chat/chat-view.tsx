@@ -77,7 +77,7 @@ export function ChatView({
   const isPartnerTyping = chat.typing?.[partner.id] ?? false;
 
   return (
-    <div className="flex h-svh flex-col bg-card">
+    <div className="flex h-full flex-col bg-card">
       <ChatHeader 
           partner={partner}
           onClearChat={() => onClearChat(chat.id)}
@@ -88,7 +88,7 @@ export function ChatView({
         partner={partner}
         isPartnerTyping={isPartnerTyping}
       />
-      <div className="flex-grow-[0.2] basis-auto md:flex-grow-0 md:basis-auto">
+      <div className="flex-grow-[0.4] basis-auto md:flex-grow-0 md:basis-auto">
         <MessageInput onSendMessage={onSendMessage} onTypingChange={onTypingChange} />
       </div>
     </div>
