@@ -33,7 +33,7 @@ export function MessageList({ messages, currentUserId, partner, isPartnerTyping 
   }
 
   return (
-    <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 pb-8 min-h-0">
+    <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 pb-2 min-h-0">
       <div className="flex flex-col gap-4">
         {messages.map((message) => {
           const isCurrentUser = message.senderId === currentUserId;
@@ -46,7 +46,7 @@ export function MessageList({ messages, currentUserId, partner, isPartnerTyping 
               })}
             >
               {!isCurrentUser && (
-                <Avatar className="h-6 w-6 self-end">
+                <Avatar className="h-8 w-8 self-end md:h-6 md:w-6">
                     <AvatarFallback>
                         {partner.username.charAt(0).toUpperCase()}
                     </AvatarFallback>
@@ -61,9 +61,9 @@ export function MessageList({ messages, currentUserId, partner, isPartnerTyping 
                   }
                 )}
               >
-                <p className="text-sm">{message.text}</p>
+                <p className="text-base md:text-sm">{message.text}</p>
                 {message.timestamp && (
-                  <p className={cn("text-xs mt-1", isCurrentUser ? "text-primary-foreground/70" : "text-muted-foreground/70")}>
+                  <p className={cn("text-sm mt-1 md:text-xs", isCurrentUser ? "text-primary-foreground/70" : "text-muted-foreground/70")}>
                     {format(toDate(message.timestamp), 'p')}
                   </p>
                 )}
@@ -73,7 +73,7 @@ export function MessageList({ messages, currentUserId, partner, isPartnerTyping 
         })}
         {isPartnerTyping && (
            <div className="flex items-end gap-2 justify-start">
-             <Avatar className="h-6 w-6">
+             <Avatar className="h-8 w-8 md:h-6 md:w-6">
                 <AvatarFallback>
                     {partner.username.charAt(0).toUpperCase()}
                 </AvatarFallback>
