@@ -63,7 +63,7 @@ export function MessageInput({ onSendMessage, onTypingChange }: MessageInputProp
   }
 
   return (
-    <div className="border-t bg-background p-4 md:px-4 md:py-8">
+    <div className="border-t bg-background p-4 md:px-4 md:py-2">
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}

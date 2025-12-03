@@ -288,7 +288,7 @@ export function ChatLayout() {
     // .filter(chat => chat.partner);
 
   return (
-    <div className="flex h-svh w-full">
+    <div className="flex h-svh w-full bg-background">
       <AppSidebar
         user={currentUser}
         chats={chatsWithPartners}
