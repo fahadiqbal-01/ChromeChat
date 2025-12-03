@@ -54,7 +54,7 @@ export function MessageList({ messages, currentUserId, partner, isPartnerTyping 
               )}
               <div
                 className={cn(
-                  'max-w-[75%] rounded-lg px-3 py-2',
+                  'max-w-[60%] rounded-lg px-3 py-2',
                   {
                     'bg-primary text-primary-foreground': isCurrentUser,
                     'bg-muted': !isCurrentUser,
