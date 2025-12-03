@@ -29,9 +29,9 @@ export function ChatHeader({ partner, onClearChat }: ChatHeaderProps) {
   const lastSeenDate = toDate(partner.lastSeen);
 
   return (
-    <header className="flex h-14 items-center justify-between border-b bg-background px-4 md:h-14">
+    <header className="flex h-14 items-center justify-between border-b bg-background px-4">
       <div className="flex items-center gap-3">
-        <Avatar className="h-9 w-9 md:h-8 md:w-8">
+        <Avatar className="h-8 w-8">
             <AvatarFallback>
                 {partner.username.charAt(0).toUpperCase()}
             </AvatarFallback>
@@ -39,10 +39,10 @@ export function ChatHeader({ partner, onClearChat }: ChatHeaderProps) {
         <div className="flex flex-col">
           <h2 className="font-semibold text-base">{partner.username}</h2>
           {partner.isActive ? (
-            <p className="text-sm text-green-500 md:text-xs">Online</p>
+            <p className="text-sm text-green-500">Online</p>
           ) : (
             lastSeenDate && (
-              <p className="text-sm text-muted-foreground md:text-xs">
+              <p className="text-sm text-muted-foreground">
                 Last seen {formatDistanceToNow(lastSeenDate, { addSuffix: true })}
               </p>
             )
@@ -53,7 +53,7 @@ export function ChatHeader({ partner, onClearChat }: ChatHeaderProps) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
-              <MoreVertical className="h-6 w-6 md:h-5 md:w-5" />
+              <MoreVertical className="h-5 w-5" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
