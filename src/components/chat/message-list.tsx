@@ -33,7 +33,7 @@ export function MessageList({ messages, currentUserId, partner, isPartnerTyping 
   }
 
   return (
-    <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 pb-2 min-h-0">
+    <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 pb-2">
       <div className="flex flex-col gap-4">
         {messages.map((message) => {
           const isCurrentUser = message.senderId === currentUserId;
@@ -54,7 +54,7 @@ export function MessageList({ messages, currentUserId, partner, isPartnerTyping 
               )}
               <div
                 className={cn(
-                  'max-w-[35%] rounded-lg px-3 py-2 md:max-w-[60%]',
+                  'max-w-[75%] rounded-lg px-3 py-2 md:max-w-[60%]',
                   {
                     'bg-primary text-primary-foreground': isCurrentUser,
                     'bg-muted': !isCurrentUser,

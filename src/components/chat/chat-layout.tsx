@@ -302,7 +302,7 @@ export function ChatLayout() {
         onAcceptRequest={handleAcceptRequest}
         onRejectRequest={handleRejectRequest}
       />
-      <SidebarInset className="flex-1 flex flex-col">
+      <SidebarInset className="flex flex-1 flex-col">
         <ChatView
           currentUser={currentUser}
           chat={selectedChat}
