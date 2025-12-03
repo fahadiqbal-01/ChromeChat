@@ -46,7 +46,7 @@ export function ChatView({
   
   if (!chat) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 bg-background">
+      <div className="flex flex-col items-center justify-center gap-4 bg-background h-full">
         <div className="absolute right-4 top-4">
           <SidebarTrigger />
         </div>
@@ -65,7 +65,7 @@ export function ChatView({
 
   if (!partner) {
      return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 bg-background">
+      <div className="flex flex-col items-center justify-center gap-4 bg-background h-full">
         <div className="absolute right-4 top-4">
           <SidebarTrigger />
         </div>
@@ -77,7 +77,7 @@ export function ChatView({
   const isPartnerTyping = chat.typing?.[partner.id] ?? false;
 
   return (
-    <div className="flex h-full flex-col bg-card">
+    <div className="flex flex-col bg-card h-full">
       <ChatHeader 
           partner={partner}
           onClearChat={() => onClearChat(chat.id)}
@@ -88,9 +88,10 @@ export function ChatView({
         partner={partner}
         isPartnerTyping={isPartnerTyping}
       />
-      <div className="flex-grow-[0.4] basis-auto md:flex-grow-0 md:basis-auto">
+      <div className="flex-grow-[0.8] basis-auto md:flex-grow-0 md:basis-auto">
         <MessageInput onSendMessage={onSendMessage} onTypingChange={onTypingChange} />
       </div>
     </div>
   );
 }
+
