@@ -88,7 +88,7 @@ export function ChatView({
         partner={partner}
         isPartnerTyping={isPartnerTyping}
       />
-      <div className="flex-grow-0 basis-auto md:flex-grow-0 md:basis-auto">
+      <div className="flex-grow-[0.2] basis-auto md:flex-grow-0 md:basis-auto">
         <MessageInput onSendMessage={onSendMessage} onTypingChange={onTypingChange} />
       </div>
     </div>
